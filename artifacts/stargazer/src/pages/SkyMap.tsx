@@ -83,12 +83,40 @@ interface TooltipState {
   svgY: number;
 }
 
+// ─── Visibility filter modes ───────────────────────────────────────────────────
+type VisibilityMode = 'naked-eye' | 'binoculars' | 'telescope';
+
+const VISIBILITY_MODES: { key: VisibilityMode; label: string; icon: string; magLimit: number; hint: string }[] = [
+  { key: 'naked-eye',   label: 'Naked Eye',  icon: '👁️',  magLimit: 6,        hint: 'Mag ≤ 6' },
+  { key: 'binoculars',  label: 'Binoculars', icon: '🔭',  magLimit: 9,        hint: 'Mag ≤ 9' },
+  { key: 'telescope',   label: 'Telescope',  icon: '🌌',  magLimit: Infinity,  hint: 'All objects' },
+];
+
+const LS_KEY = 'stargazer-sky-visibility';
+
 // ─── Component ─────────────────────────────────────────────────────────────────
 export default function SkyMap() {
   const { lat, lon } = useSkyLocation();
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [svgSize, setSvgSize] = useState(520);
+
+  // Visibility filter — persisted to localStorage
+  const [visibilityMode, setVisibilityModeState] = useState<VisibilityMode>(() => {
+    try {
+      const stored = localStorage.getItem(LS_KEY);
+      if (stored === 'naked-eye' || stored === 'binoculars' || stored === 'telescope') return stored;
+    } catch {}
+    return 'naked-eye';
+  });
+
+  const setVisibilityMode = (mode: VisibilityMode) => {
+    setVisibilityModeState(mode);
+    try { localStorage.setItem(LS_KEY, mode); } catch {}
+    setTooltip(null); // dismiss any open tooltip when filter changes
+  };
+
+  const activeMagLimit = VISIBILITY_MODES.find(m => m.key === visibilityMode)!.magLimit;
 
   // Observe SVG size for responsiveness
   const containerRef = useCallback((node: HTMLDivElement | null) => {
@@ -234,8 +262,8 @@ export default function SkyMap() {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
-  const aboveHorizon = skyObjects.filter((o) => o.altitude > 0);
-  const belowHorizon = skyObjects.filter((o) => o.altitude <= 0);
+  const aboveHorizon = skyObjects.filter((o) => o.altitude > 0 && o.magnitude <= activeMagLimit);
+  const belowHorizon = skyObjects.filter((o) => o.altitude <= 0 && o.magnitude <= activeMagLimit);
 
   // Tooltip position: keep inside SVG bounds
   const tooltipW = 240;
@@ -274,6 +302,38 @@ export default function SkyMap() {
           </div>
         </div>
       </header>
+
+      {/* ── Visibility filter ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest shrink-0">Equipment</span>
+        <div className="flex rounded-lg border border-border/60 bg-card/40 p-0.5 gap-0.5">
+          {VISIBILITY_MODES.map((mode) => {
+            const isActive = visibilityMode === mode.key;
+            return (
+              <button
+                key={mode.key}
+                onClick={() => setVisibilityMode(mode.key)}
+                className={[
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono transition-all',
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-[0_0_10px_rgba(0,212,255,0.25)]'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-card/60',
+                ].join(' ')}
+                title={mode.hint}
+              >
+                <span>{mode.icon}</span>
+                <span>{mode.label}</span>
+                <span className={['text-[10px]', isActive ? 'text-primary-foreground/70' : 'text-muted-foreground/50'].join(' ')}>
+                  {mode.hint}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <span className="text-xs font-mono text-muted-foreground">
+          {aboveHorizon.length} object{aboveHorizon.length !== 1 ? 's' : ''} visible above horizon
+        </span>
+      </div>
 
       {/* Sky map */}
       <div
@@ -601,9 +661,9 @@ export default function SkyMap() {
       {/* ── Stats row ── */}
       <div className="grid grid-cols-3 gap-3 text-center font-mono text-xs">
         {[
-          { label: 'Planets', count: planets?.filter((p) => p.isVisible).length ?? 0, total: planets?.length ?? 0, color: 'text-yellow-400' },
-          { label: 'Stars', count: stars?.filter((s) => s.altitude > 0).length ?? 0, total: stars?.length ?? 0, color: 'text-slate-200' },
-          { label: 'DSOs', count: dsos?.filter((d) => d.isVisible).length ?? 0, total: dsos?.length ?? 0, color: 'text-sky-400' },
+          { label: 'Planets', count: aboveHorizon.filter((o) => o.kind === 'planet').length, total: planets?.length ?? 0, color: 'text-yellow-400' },
+          { label: 'Stars',   count: aboveHorizon.filter((o) => o.kind === 'star').length,   total: stars?.length ?? 0,   color: 'text-slate-200' },
+          { label: 'DSOs',    count: aboveHorizon.filter((o) => o.kind === 'dso').length,    total: dsos?.length ?? 0,    color: 'text-sky-400'   },
         ].map(({ label, count, total, color }) => (
           <div key={label} className="bg-card/30 border border-border/40 rounded-xl p-3">
             <div className={`text-xl font-bold ${color}`}>{count}</div>
