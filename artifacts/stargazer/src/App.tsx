@@ -13,6 +13,7 @@ import Planets from '@/pages/Planets';
 import Moon from '@/pages/Moon';
 import Stars from '@/pages/Stars';
 import DeepSky from '@/pages/DeepSky';
+import Events from '@/pages/Events';
 import ISS from '@/pages/ISS';
 import Weather from '@/pages/Weather';
 import SkyMap from '@/pages/SkyMap';
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/moon" component={Moon} />
           <Route path="/stars" component={Stars} />
           <Route path="/deep-sky" component={DeepSky} />
+          <Route path="/events" component={Events} />
           <Route path="/iss" component={ISS} />
           <Route path="/weather" component={Weather} />
           <Route path="/skymap" component={SkyMap} />

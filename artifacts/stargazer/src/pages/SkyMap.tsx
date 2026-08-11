@@ -7,13 +7,14 @@ import {
 } from '@workspace/api-client-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Map as MapIcon, Info, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Polar projection helpers ──────────────────────────────────────────────────
 // Center = zenith (alt 90°), edge = horizon (alt 0°)
 // North at top, East at right (standard astronomical view)
 import { formatLocalTime } from '@/lib/utils/astronomy';
+import { Map as MapIcon, Info, X, Search, Sunrise, Sunset, GitBranch } from 'lucide-react';
+import { CONSTELLATION_LINES } from '@/data/constellations';
 function altAzToXY(alt: number, az: number, cx: number, cy: number, R: number) {
   const r = ((90 - Math.max(0, alt)) / 90) * R;
   const rad = (az * Math.PI) / 180;
@@ -42,29 +43,6 @@ function magToRadius(mag: number, maxR = 8, minR = 2): number {
   const clamped = Math.min(Math.max(mag, -2), 7);
   return maxR - ((clamped + 2) / 9) * (maxR - minR);
 }
-
-// ─── Constellation line pairs (by star name) ──────────────────────────────────
-const CONSTELLATION_LINES: [string, string][] = [
-  // Orion
-  ['Betelgeuse', 'Bellatrix'],
-  ['Betelgeuse', 'Alnitak'],
-  ['Bellatrix', 'Mintaka'],
-  ['Mintaka', 'Alnilam'],
-  ['Alnilam', 'Alnitak'],
-  ['Rigel', 'Alnitak'],
-  // Gemini
-  ['Castor', 'Pollux'],
-  // Taurus
-  ['Aldebaran', 'Elnath'],
-  // Canis Major
-  ['Sirius', 'Adhara'],
-  // Scorpius
-  ['Antares', 'Shaula'],
-  // Ursa Major
-  ['Dubhe', 'Alkaid'],
-];
-
-// ─── Types ─────────────────────────────────────────────────────────────────────
 interface SkyObject {
   id: string;
   label: string;        // display label — for DSOs includes the Messier ID, e.g. "Orion Nebula (M42)"
@@ -122,6 +100,22 @@ export default function SkyMap() {
   };
 
   const activeMagLimit = VISIBILITY_MODES.find(m => m.key === visibilityMode)!.magLimit;
+
+  // ── Constellation lines toggle ────────────────────────────────────────────────
+  const LS_CONST_KEY = 'stargazer-show-constellations';
+  const [showConstellations, setShowConstellationsState] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem(LS_CONST_KEY);
+      return stored === null ? true : stored === 'true';
+    } catch {}
+    return true;
+  });
+
+  const toggleConstellations = () => {
+    const next = !showConstellations;
+    setShowConstellationsState(next);
+    try { localStorage.setItem(LS_CONST_KEY, String(next)); } catch {}
+  };
 
   // ── Search state ──────────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
@@ -504,6 +498,21 @@ export default function SkyMap() {
             );
           })}
         </div>
+        {/* Constellation lines toggle */}
+        <button
+          onClick={toggleConstellations}
+          title={showConstellations ? 'Hide constellation lines' : 'Show constellation lines'}
+          className={[
+            'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono border transition-all',
+            showConstellations
+              ? 'bg-primary/15 border-primary/40 text-primary shadow-[0_0_8px_rgba(0,212,255,0.15)]'
+              : 'border-border/60 bg-card/40 text-muted-foreground hover:text-foreground hover:bg-card/60',
+          ].join(' ')}
+        >
+          <GitBranch className="w-3.5 h-3.5" />
+          <span>Constellations</span>
+        </button>
+
         <span className="text-xs font-mono text-muted-foreground">
           {aboveHorizon.length} object{aboveHorizon.length !== 1 ? 's' : ''} visible above horizon
         </span>
@@ -625,25 +634,41 @@ export default function SkyMap() {
           </text>
 
           {/* ── Constellation lines (above horizon only) ── */}
-          <g clipPath="url(#skyClip)" opacity="0.45">
-            {CONSTELLATION_LINES.map(([aName, bName]) => {
-              const a = starMap.get(aName);
-              const b = starMap.get(bName);
-              if (!a || !b) return null;
-              if (a.altitude <= 0 && b.altitude <= 0) return null;
-              const pa = altAzToXY(a.altitude, a.azimuth, cx, cy, R);
-              const pb = altAzToXY(b.altitude, b.azimuth, cx, cy, R);
-              return (
-                <line
-                  key={`${aName}-${bName}`}
-                  x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
-                  stroke="#64748b"
-                  strokeWidth="0.8"
-                  strokeDasharray="3 3"
-                />
-              );
-            })}
-          </g>
+          {showConstellations && (
+            <g clipPath="url(#skyClip)">
+              {(() => {
+                // Dim all constellation lines when the search highlight is active and on-map
+                const searchIsOnMap = selectedSearch ? selectedSearch.altitude > 0 : false;
+                const baseOpacity = searchIsOnMap ? 0.12 : 1;
+
+                return CONSTELLATION_LINES.map(({ a: aName, b: bName }) => {
+                  const a = starMap.get(aName);
+                  const b = starMap.get(bName);
+                  if (!a || !b) return null;
+                  if (a.altitude <= 0 && b.altitude <= 0) return null;
+
+                  // Fade lines whose stars are near the horizon (below 15° → fade out)
+                  const minAlt = Math.min(a.altitude, b.altitude);
+                  const horizonFade = Math.min(1, Math.max(0, minAlt / 15));
+                  const opacity = 0.45 * horizonFade * baseOpacity;
+
+                  const pa = altAzToXY(a.altitude, a.azimuth, cx, cy, R);
+                  const pb = altAzToXY(b.altitude, b.azimuth, cx, cy, R);
+                  return (
+                    <line
+                      key={`${aName}-${bName}`}
+                      x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
+                      stroke="#94a3b8"
+                      strokeWidth="0.9"
+                      strokeDasharray="3 4"
+                      opacity={opacity}
+                      style={{ transition: 'opacity 0.3s' }}
+                    />
+                  );
+                });
+              })()}
+            </g>
+          )}
 
           {/* ── Sky objects above horizon ── */}
           <g clipPath="url(#skyClip)">

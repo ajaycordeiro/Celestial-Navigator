@@ -398,6 +398,86 @@ const BRIGHT_STARS = [
   { name: "Polaris", ra: 2.5303, dec: 89.2641, mag: 1.98, spectral: "F7Ib", dist: 433, constellation: "Ursa Minor", desc: "The North Star, within 1° of the north celestial pole. It has been used for navigation for millennia." },
   { name: "Dubhe", ra: 11.0621, dec: 61.7511, mag: 1.79, spectral: "K0III", dist: 124, constellation: "Ursa Major", desc: "The leading star of the Big Dipper's bowl, pointing toward Polaris. A circumpolar star from mid-latitudes." },
   { name: "Alkaid", ra: 13.7923, dec: 49.3133, mag: 1.85, spectral: "B3V", dist: 101, constellation: "Ursa Major", desc: "The tip of the Big Dipper's handle. Despite being in Ursa Major, it is not gravitationally bound to the cluster." },
+
+  // ── Ursa Major: complete the Big Dipper bowl & handle ────────────────────────
+  { name: "Alioth",   ra: 12.9004, dec: 55.9600, mag: 1.77, spectral: "A0p",   dist: 81,  constellation: "Ursa Major",    desc: "The brightest star in Ursa Major, forming the base of the Dipper's handle. A peculiar A-type giant with variable magnetic activity." },
+  { name: "Merak",    ra: 11.0307, dec: 56.3824, mag: 2.37, spectral: "A1V",   dist: 79,  constellation: "Ursa Major",    desc: "The southern pointer of the Big Dipper bowl. Drawing a line from Merak through Dubhe leads straight to Polaris." },
+  { name: "Phecda",   ra: 11.8971, dec: 53.6948, mag: 2.44, spectral: "A0V",   dist: 84,  constellation: "Ursa Major",    desc: "The southeastern corner of the Big Dipper's bowl. Part of the Ursa Major Moving Group of co-moving stars." },
+  { name: "Megrez",   ra: 12.2568, dec: 57.0326, mag: 3.31, spectral: "A3V",   dist: 81,  constellation: "Ursa Major",    desc: "The faintest star of the Big Dipper, sitting at the junction of the bowl and handle. Its name means 'root of the tail'." },
+  { name: "Mizar",    ra: 13.3988, dec: 54.9254, mag: 2.27, spectral: "A2V",   dist: 86,  constellation: "Ursa Major",    desc: "The second star from the end of the Dipper's handle. Has a famous naked-eye companion, Alcor — a traditional eyesight test." },
+
+  // ── Orion: complete the figure ────────────────────────────────────────────────
+  { name: "Saiph",    ra: 5.7956,  dec: -9.6697, mag: 2.06, spectral: "B0.5III", dist: 720, constellation: "Orion",   desc: "Orion's right knee, mirroring Rigel on the other side. Despite its similar distance to Rigel it appears much dimmer due to its ultraviolet output." },
+  { name: "Meissa",   ra: 5.5833,  dec:  9.9342, mag: 3.39, spectral: "O8III",  dist: 1100, constellation: "Orion",   desc: "Orion's head, a hot blue giant forming a small arc of stars sometimes called the 'Lambda Orionis Ring'." },
+
+  // ── Scorpius: body and tail ───────────────────────────────────────────────────
+  { name: "Graffias",  ra: 16.0914, dec: -19.8056, mag: 2.62, spectral: "B1V",    dist: 530, constellation: "Scorpius",  desc: "One of the claws of Scorpius, also called Acrab or Beta Scorpii. A complex multiple-star system at least six components." },
+  { name: "Dschubba",  ra: 16.0050, dec: -22.6217, mag: 2.29, spectral: "B0.2IV", dist: 490, constellation: "Scorpius",  desc: "The forehead of the Scorpion, marking the start of the body. It had a dramatic brightening event in 2000." },
+  { name: "Sargas",    ra: 17.6220, dec: -42.9979, mag: 1.87, spectral: "F1II",   dist: 300, constellation: "Scorpius",  desc: "The brightest star in the curved tail of Scorpius. Its ancient Babylonian name means 'scorpion' — one of the oldest stellar names." },
+  { name: "Lesath",   ra: 17.5122, dec: -37.2958, mag: 2.70, spectral: "B2IV",   dist: 580, constellation: "Scorpius",  desc: "The upper stinger of Scorpius, paired with Shaula. The two make up the 'cat's eyes' at the tip of the scorpion's tail." },
+
+  // ── Canis Major: the body of the dog ─────────────────────────────────────────
+  { name: "Mirzam",   ra: 6.3783,  dec: -17.9559, mag: 1.98, spectral: "B1II",   dist: 500, constellation: "Canis Major", desc: "The 'Announcer', rising just before Sirius. A brilliant blue-white supergiant and Beta Canis Majoris prototype variable." },
+  { name: "Wezen",    ra: 7.1397,  dec: -26.3932, mag: 1.83, spectral: "F8Ia",   dist: 1600, constellation: "Canis Major", desc: "A yellow supergiant marking the dog's hindquarters. One of the intrinsically most luminous stars visible to the naked eye." },
+  { name: "Aludra",   ra: 7.4019,  dec: -29.3030, mag: 2.45, spectral: "B5Ia",   dist: 3200, constellation: "Canis Major", desc: "The tail tip of Canis Major. One of the most intrinsically luminous supergiants in the Milky Way, over 100,000 solar luminosities." },
+
+  // ── Gemini: the twin bodies ───────────────────────────────────────────────────
+  { name: "Alhena",   ra: 6.6283,  dec: 16.3994, mag: 1.93, spectral: "A0IV",   dist: 109, constellation: "Gemini",     desc: "The foot of Pollux, the brighter twin. A blue-white subgiant near the ecliptic, often visited by solar-system objects." },
+  { name: "Tejat",    ra: 6.3829,  dec: 22.5137, mag: 2.87, spectral: "M3III",  dist: 230, constellation: "Gemini",     desc: "The foot of Castor, a cool red giant also known as Mu Geminorum. One of the brighter red giants in the sky." },
+  { name: "Propus",   ra: 6.2481,  dec: 22.5068, mag: 3.31, spectral: "M6III",  dist: 880, constellation: "Gemini",     desc: "A Mira-type variable giant near Castor's foot, also known as Eta Geminorum. Varies noticeably over about 230 days." },
+
+  // ── Cygnus: the Northern Cross ────────────────────────────────────────────────
+  { name: "Sadr",      ra: 20.3704, dec: 40.2567, mag: 2.23, spectral: "F8Ib",  dist: 1800, constellation: "Cygnus",    desc: "The heart of the swan, marking the center of the Northern Cross. Surrounded by a beautiful region of nebulosity." },
+  { name: "Albireo",   ra: 19.5123, dec: 27.9597, mag: 3.09, spectral: "K2II",  dist: 430,  constellation: "Cygnus",    desc: "The beak of the swan, one of the most celebrated double stars. Through a telescope it displays a stunning gold and blue pair." },
+  { name: "Gienah Cygni", ra: 20.7705, dec: 33.9703, mag: 2.46, spectral: "K0III", dist: 72, constellation: "Cygnus",  desc: "The right wing tip of the swan, also called Epsilon Cygni. An orange giant offering a warm hue against the Milky Way." },
+  { name: "Rukh",      ra: 19.7496, dec: 45.1306, mag: 2.87, spectral: "B9III", dist: 170,  constellation: "Cygnus",    desc: "The left wing of the swan, also called Delta Cygni. A binary system: a bright blue-white giant with a fainter companion." },
+
+  // ── Leo: the sickle and hindquarters ─────────────────────────────────────────
+  { name: "Denebola",  ra: 11.8176, dec: 14.5722, mag: 2.14, spectral: "A3V",   dist: 36,  constellation: "Leo",        desc: "The lion's tail, a young and active star surrounded by a debris disk hinting at a planetary system in formation." },
+  { name: "Algieba",   ra: 10.3328, dec: 19.8414, mag: 2.28, spectral: "K1III", dist: 130, constellation: "Leo",        desc: "The mane of Leo, a fine double star of two orange giants orbiting each other over 500 years. Has a confirmed exoplanet." },
+  { name: "Zosma",     ra: 11.2352, dec: 20.5237, mag: 2.56, spectral: "A4V",   dist: 58,  constellation: "Leo",        desc: "On the lion's haunches, also called Delta Leonis. A rapidly rotating star that is nearly at the equator of the sky's ecliptic plane." },
+
+  // ── Cassiopeia: the W ─────────────────────────────────────────────────────────
+  { name: "Schedar",   ra: 0.6751,  dec: 56.5373, mag: 2.24, spectral: "K0IIIa", dist: 228, constellation: "Cassiopeia", desc: "The brightest star of Cassiopeia, a slightly variable orange giant. Its name means 'breast' in Arabic." },
+  { name: "Caph",      ra: 0.1528,  dec: 59.1498, mag: 2.27, spectral: "F2III",  dist: 54,  constellation: "Cassiopeia", desc: "The westernmost star of the Cassiopeia W, also on the 0h hour circle. Used historically as a reference for measuring the sky." },
+  { name: "Navi",      ra: 0.9454,  dec: 60.7167, mag: 2.47, spectral: "B0IVe",  dist: 610, constellation: "Cassiopeia", desc: "The central star of the W, a hot Be-type variable. It was informally named 'Navi' by astronaut Gus Grissom as a tribute." },
+  { name: "Ruchbah",   ra: 1.4305,  dec: 60.2353, mag: 2.68, spectral: "A5V",   dist: 99,  constellation: "Cassiopeia", desc: "The knee of the seated queen, a well-studied eclipsing binary with a 759-day period caused by a surrounding dust disk." },
+  { name: "Segin",     ra: 1.9068,  dec: 63.6700, mag: 3.37, spectral: "B3III", dist: 440, constellation: "Cassiopeia", desc: "The eastern tip of the W, a blue giant and the faintest of the five main Cassiopeia stars. Named in modern times." },
+
+  // ── Sagittarius: the Teapot ───────────────────────────────────────────────────
+  { name: "Kaus Australis", ra: 18.4029, dec: -34.3846, mag: 1.79, spectral: "B9III", dist: 143, constellation: "Sagittarius", desc: "The brightest star of Sagittarius, marking the base of the Teapot spout. Its name is Latin-Arabic for 'southern bow'." },
+  { name: "Nunki",          ra: 18.9211, dec: -26.2967, mag: 2.05, spectral: "B2.5V", dist: 228, constellation: "Sagittarius", desc: "One of the Teapot's handle stars. The NASA Voyager 2 spacecraft is heading in this general direction and will pass nearby in 300,000 years." },
+  { name: "Kaus Media",     ra: 18.3499, dec: -29.8281, mag: 2.70, spectral: "K3III", dist: 350, constellation: "Sagittarius", desc: "The central star of the Archer's bow and middle of the Teapot spout. An orange giant well past the main sequence." },
+  { name: "Kaus Borealis",  ra: 18.4667, dec: -25.4219, mag: 2.81, spectral: "K1III", dist: 77,  constellation: "Sagittarius", desc: "The tip of the Archer's bow and top of the Teapot spout. Its name means 'northern bow' in Arabic-Latin." },
+  { name: "Ascella",        ra: 19.0432, dec: -29.8808, mag: 2.59, spectral: "A2V",   dist: 89,  constellation: "Sagittarius", desc: "One of the Teapot handle stars, also called Zeta Sagittarii. A binary system of two A-type stars orbiting every 21 years." },
+
+  // ── Perseus ───────────────────────────────────────────────────────────────────
+  { name: "Mirfak",    ra: 3.4054,  dec: 49.8612, mag: 1.79, spectral: "F5Ib",  dist: 590, constellation: "Perseus",    desc: "The brightest star in Perseus and the center of the Perseus OB1 association. A luminous yellow supergiant." },
+  { name: "Algol",     ra: 3.1360,  dec: 40.9557, mag: 2.09, spectral: "B8V",   dist: 93,  constellation: "Perseus",    desc: "The 'Demon Star', the most famous eclipsing binary. Every 2.87 days, a dimmer companion passes in front and dims it noticeably." },
+
+  // ── Boötes: the kite ─────────────────────────────────────────────────────────
+  { name: "Muphrid",   ra: 13.9114, dec: 18.3978, mag: 2.68, spectral: "G0IV",  dist: 37,  constellation: "Boötes",     desc: "Adjacent to Arcturus and part of the Boötes kite, also called Eta Boötis. A slightly evolved yellow-white star with a known companion." },
+  { name: "Izar",      ra: 14.7499, dec: 27.0742, mag: 2.70, spectral: "K0II",  dist: 210, constellation: "Boötes",     desc: "One of the finest double stars in the sky, with an orange giant primary and a blue-white companion — nicknamed Pulcherrima ('most beautiful')." },
+  { name: "Nekkar",    ra: 15.0325, dec: 40.3906, mag: 3.49, spectral: "G8III", dist: 225, constellation: "Boötes",     desc: "The head of Boötes the Herdsman, completing the top of the kite shape. Slightly evolved with a subgiant companion star." },
+
+  // ── Southern anchors (Centaurus) ──────────────────────────────────────────────
+  { name: "Hadar",           ra: 14.0638, dec: -60.3733, mag: 0.61,  spectral: "B1III", dist: 350, constellation: "Centaurus",    desc: "Also called Agena or Beta Centauri, this brilliant blue giant is the 11th brightest star. Forms the Southern Pointer pair with Rigil Kentaurus." },
+  { name: "Rigil Kentaurus", ra: 14.6600, dec: -60.8350, mag: -0.27, spectral: "G2V",   dist: 4.4, constellation: "Centaurus",    desc: "Alpha Centauri, the nearest star system to the Sun at just 4.4 light-years. Appears as the 3rd brightest star from Earth." },
+  { name: "Menkent",         ra: 14.1113, dec: -36.3700, mag: 2.06,  spectral: "K0III", dist: 61,  constellation: "Centaurus",    desc: "The shoulder of the Centaur, also called Theta Centauri. An orange giant and one of the brighter stars of this vast southern constellation." },
+  { name: "Muhlifain",       ra: 12.6920, dec: -48.9597, mag: 2.85,  spectral: "A1IV",  dist: 130, constellation: "Centaurus",    desc: "Also called Gamma Centauri, a close binary system of two nearly identical white stars that appear as one to the naked eye." },
+
+  // ── Aquila additions (for proper eagle body) ──────────────────────────────────
+  { name: "Tarazed",  ra: 19.7712, dec: 10.6132, mag: 2.72, spectral: "K3II",  dist: 395, constellation: "Aquila", desc: "The shoulder of the Eagle, also called Gamma Aquilae. An orange bright giant that forms a notable trio with Altair and Alshain." },
+  { name: "Alshain",  ra: 19.9217, dec:  6.4076, mag: 3.71, spectral: "G8IV",  dist: 45,  constellation: "Aquila", desc: "Below Altair forming the Eagle's body spine, also called Beta Aquilae. A slightly evolved yellow-white subgiant." },
+
+  // ── Taurus additions (Hyades V-shape) ────────────────────────────────────────
+  { name: "Ain",      ra: 4.4770,  dec: 19.1806, mag: 3.53, spectral: "K0III", dist: 155, constellation: "Taurus",  desc: "The northern eye of Taurus the Bull, also called Epsilon Tauri. An orange giant and one of the Hyades star cluster members." },
+
+  // ── Perseus additions ─────────────────────────────────────────────────────────
+  { name: "Atik",     ra: 3.9020,  dec: 31.8836, mag: 2.85, spectral: "B1IV",  dist: 750, constellation: "Perseus", desc: "Also called Zeta Persei, it marks the waist of the hero. A blue supergiant among the hottest and most luminous stars of the Perseus OB2 association." },
+
+  // ── Auriga additions (pentagon) ───────────────────────────────────────────────
+  { name: "Menkalinan", ra: 5.9921, dec: 44.9475, mag: 1.90, spectral: "A2IV", dist: 82, constellation: "Auriga", desc: "Also called Beta Aurigae, the second-brightest star in Auriga. A double-lined spectroscopic binary system of two nearly identical white giant stars." },
 ];
 
 /**
