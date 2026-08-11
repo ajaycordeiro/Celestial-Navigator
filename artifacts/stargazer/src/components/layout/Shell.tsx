@@ -7,13 +7,15 @@ import {
   CloudRainWind,
   Calendar,
   Satellite,
-  Compass
+  Compass,
+  Map as MapIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ReactNode } from 'react';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: Telescope },
+  { path: '/skymap', label: 'Sky Map', icon: MapIcon },
   { path: '/planets', label: 'Planets', icon: Orbit },
   { path: '/moon', label: 'Moon', icon: Moon },
   { path: '/stars', label: 'Stars', icon: Sparkles },

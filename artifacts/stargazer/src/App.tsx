@@ -16,6 +16,7 @@ import DeepSky from '@/pages/DeepSky';
 import Events from '@/pages/Events';
 import ISS from '@/pages/ISS';
 import Weather from '@/pages/Weather';
+import SkyMap from '@/pages/SkyMap';
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/events" component={Events} />
           <Route path="/iss" component={ISS} />
           <Route path="/weather" component={Weather} />
+          <Route path="/skymap" component={SkyMap} />
           <Route component={NotFound} />
         </Switch>
       </RoutedErrorBoundary>
