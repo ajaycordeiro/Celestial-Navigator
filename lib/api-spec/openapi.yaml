@@ -3,20 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: StarGazer astronomy API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: sky
+    description: Tonight's sky data
+  - name: nasa
+    description: NASA image library
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +28,516 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /sky/overview:
+    get:
+      operationId: getSkyOverview
+      tags: [sky]
+      summary: Tonight's sky overview for a given location
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+        - name: date
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Sky overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkyOverview"
+        "400":
+          description: Missing or invalid parameters
+
+  /sky/planets:
+    get:
+      operationId: getPlanets
+      tags: [sky]
+      summary: Visible planets tonight
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+        - name: date
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of planets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Planet"
+        "400":
+          description: Missing or invalid parameters
+
+  /sky/moon:
+    get:
+      operationId: getMoon
+      tags: [sky]
+      summary: Moon phase and rise/set times
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+        - name: date
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Moon details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MoonInfo"
+        "400":
+          description: Missing or invalid parameters
+
+  /sky/stars:
+    get:
+      operationId: getStars
+      tags: [sky]
+      summary: Notable stars and constellations visible tonight
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+        - name: date
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of visible stars
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Star"
+        "400":
+          description: Missing or invalid parameters
+
+  /sky/deep-sky:
+    get:
+      operationId: getDeepSkyObjects
+      tags: [sky]
+      summary: Messier deep sky objects visible tonight
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+        - name: date
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of deep sky objects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeepSkyObject"
+        "400":
+          description: Missing or invalid parameters
+
+  /sky/events:
+    get:
+      operationId: getCelestialEvents
+      tags: [sky]
+      summary: Upcoming celestial events (meteor showers, eclipses, conjunctions)
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+        - name: days
+          in: query
+          required: false
+          schema: { type: number }
+      responses:
+        "200":
+          description: List of upcoming events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CelestialEvent"
+        "400":
+          description: Missing or invalid parameters
+
+  /sky/iss:
+    get:
+      operationId: getISSPasses
+      tags: [sky]
+      summary: ISS pass times over the given location
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+      responses:
+        "200":
+          description: ISS pass info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ISSInfo"
+        "400":
+          description: Missing or invalid parameters
+        "503":
+          description: ISS data unavailable
+
+  /sky/weather:
+    get:
+      operationId: getSkyWeather
+      tags: [sky]
+      summary: Seeing conditions and cloud cover for stargazing
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+      responses:
+        "200":
+          description: Weather / seeing conditions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkyWeather"
+        "400":
+          description: Missing or invalid parameters
+
+  /nasa/images:
+    get:
+      operationId: searchNasaImages
+      tags: [nasa]
+      summary: Search NASA image library for a celestial object
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: count
+          in: query
+          required: false
+          schema: { type: number }
+      responses:
+        "200":
+          description: List of NASA images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NasaImage"
+        "400":
+          description: Missing query
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    SkyOverview:
+      type: object
+      required: [moonPhase, moonPhaseName, moonIllumination, visiblePlanetCount, visibleDeepSkyCount, solarNoon, astronomicalTwilightEnd, astronomicalTwilightStart, sunsetTime, sunriseTime, locationName, localTime]
+      properties:
+        moonPhase:
+          type: number
+          description: Moon phase 0-1 (0=new, 0.5=full)
+        moonPhaseName:
+          type: string
+        moonIllumination:
+          type: number
+        visiblePlanetCount:
+          type: number
+        visibleDeepSkyCount:
+          type: number
+        solarNoon:
+          type: string
+        sunsetTime:
+          type: string
+        sunriseTime:
+          type: string
+        astronomicalTwilightEnd:
+          type: string
+          description: When true darkness starts
+        astronomicalTwilightStart:
+          type: string
+          description: When true darkness ends in the morning
+        locationName:
+          type: string
+        localTime:
+          type: string
+
+    Planet:
+      type: object
+      required: [name, altitude, azimuth, magnitude, riseTime, setTime, isVisible, constellation, distanceAU, description, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          description: e.g. "Terrestrial Planet", "Gas Giant"
+        altitude:
+          type: number
+          description: Degrees above horizon (positive = visible)
+        azimuth:
+          type: number
+          description: Compass bearing 0-360
+        magnitude:
+          type: number
+          description: Apparent magnitude (lower = brighter)
+        riseTime:
+          type: ["string", "null"]
+        setTime:
+          type: ["string", "null"]
+        isVisible:
+          type: boolean
+          description: Whether currently above horizon
+        constellation:
+          type: string
+        distanceAU:
+          type: number
+        description:
+          type: string
+
+    MoonInfo:
+      type: object
+      required: [phase, phaseName, illumination, altitude, azimuth, riseTime, setTime, age, distanceKm, nextFullMoon, nextNewMoon]
+      properties:
+        phase:
+          type: number
+        phaseName:
+          type: string
+        illumination:
+          type: number
+        altitude:
+          type: number
+        azimuth:
+          type: number
+        riseTime:
+          type: ["string", "null"]
+        setTime:
+          type: ["string", "null"]
+        age:
+          type: number
+          description: Age in days since new moon
+        distanceKm:
+          type: number
+        nextFullMoon:
+          type: string
+        nextNewMoon:
+          type: string
+
+    Star:
+      type: object
+      required: [name, constellation, altitude, azimuth, magnitude, spectralType, distanceLY, description, isCircumpolar, riseTime, setTime]
+      properties:
+        name:
+          type: string
+        constellation:
+          type: string
+        altitude:
+          type: number
+        azimuth:
+          type: number
+        magnitude:
+          type: number
+        spectralType:
+          type: string
+        distanceLY:
+          type: number
+        description:
+          type: string
+        isCircumpolar:
+          type: boolean
+        riseTime:
+          type: ["string", "null"]
+        setTime:
+          type: ["string", "null"]
+
+    DeepSkyObject:
+      type: object
+      required: [id, name, type, constellation, magnitude, altitude, azimuth, riseTime, setTime, isVisible, description, distanceLY, angularSize]
+      properties:
+        id:
+          type: string
+          description: e.g. "M31"
+        name:
+          type: string
+        type:
+          type: string
+          description: e.g. "Galaxy", "Nebula", "Open Cluster", "Globular Cluster"
+        constellation:
+          type: string
+        magnitude:
+          type: number
+        altitude:
+          type: number
+        azimuth:
+          type: number
+        riseTime:
+          type: ["string", "null"]
+        setTime:
+          type: ["string", "null"]
+        isVisible:
+          type: boolean
+        description:
+          type: string
+        distanceLY:
+          type: number
+        angularSize:
+          type: string
+
+    CelestialEvent:
+      type: object
+      required: [name, date, type, description, visibility, peak]
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+        peak:
+          type: string
+        type:
+          type: string
+          description: e.g. "Meteor Shower", "Eclipse", "Conjunction", "Opposition", "Occultation"
+        description:
+          type: string
+        visibility:
+          type: string
+
+    ISSInfo:
+      type: object
+      required: [currentLocation, passes]
+      properties:
+        currentLocation:
+          type: object
+          required: [lat, lon, altitude, velocity, timestamp]
+          properties:
+            lat: { type: number }
+            lon: { type: number }
+            altitude: { type: number }
+            velocity: { type: number }
+            timestamp: { type: string }
+        passes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ISSPass"
+
+    ISSPass:
+      type: object
+      required: [riseTime, maxTime, setTime, maxAltitude, duration, direction]
+      properties:
+        riseTime:
+          type: string
+        maxTime:
+          type: string
+        setTime:
+          type: string
+        maxAltitude:
+          type: number
+        duration:
+          type: number
+          description: Duration in seconds
+        direction:
+          type: string
+
+    SkyWeather:
+      type: object
+      required: [cloudCover, humidity, temperature, windSpeed, seeingRating, seeingDescription, transparency, dewPoint, conditions]
+      properties:
+        cloudCover:
+          type: number
+          description: Cloud cover percentage 0-100
+        humidity:
+          type: number
+        temperature:
+          type: number
+          description: Celsius
+        windSpeed:
+          type: number
+          description: km/h
+        dewPoint:
+          type: number
+        seeingRating:
+          type: number
+          description: 1-5 seeing quality (5=excellent)
+        seeingDescription:
+          type: string
+        transparency:
+          type: string
+          description: Sky transparency rating
+        conditions:
+          type: string
+          description: e.g. "Excellent", "Good", "Fair", "Poor"
+
+    NasaImage:
+      type: object
+      required: [title, description, url, thumbnailUrl, date, nasaId]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        thumbnailUrl:
+          type: string
+        date:
+          type: string
+        nasaId:
+          type: string

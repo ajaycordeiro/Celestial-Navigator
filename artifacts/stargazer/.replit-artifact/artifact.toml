@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "StarGazer"
+description = "An interactive astronomy companion app that shows what's visible in tonight's sky based on the user's current location. Displays planets, stars, constellations, deep sky objects, moon phase, ISS pass times, upcoming celestial events, and cloud cover/seeing conditions. Uses free astronomical calculation APIs and NASA's image library."
+version = "1.0.0"
+id = "artifacts/stargazer"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21492
+
+[services.development]
+run = "pnpm --filter @workspace/stargazer run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/stargazer", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/stargazer/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21492"
+BASE_PATH = "/"
