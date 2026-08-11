@@ -5,7 +5,6 @@ import {
   Orbit, 
   Sparkles, 
   CloudRainWind,
-  Calendar,
   Satellite,
   Compass,
   Map as MapIcon
@@ -20,7 +19,6 @@ const NAV_ITEMS = [
   { path: '/moon', label: 'Moon', icon: Moon },
   { path: '/stars', label: 'Stars', icon: Sparkles },
   { path: '/deep-sky', label: 'Deep Sky', icon: Compass },
-  { path: '/events', label: 'Events', icon: Calendar },
   { path: '/iss', label: 'ISS Tracker', icon: Satellite },
   { path: '/weather', label: 'Conditions', icon: CloudRainWind },
 ];
