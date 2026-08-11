@@ -4,8 +4,9 @@ import { useGetStars, getGetStarsQueryKey } from '@workspace/api-client-react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
-import { Sparkles, ArrowUp, Navigation } from 'lucide-react';
+import { Sparkles, ArrowUp, Sunrise, Sunset } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { formatLocalTime } from '@/lib/utils/astronomy';
 
 function getSpectralColor(type: string): string {
   const firstChar = type.charAt(0).toUpperCase();
@@ -110,6 +111,27 @@ export default function Stars() {
                     <div>
                       <span className="text-muted-foreground block mb-1">DIST</span>
                       <span className="text-foreground">{star.distanceLY} ly</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono mt-2 bg-background/30 rounded p-2">
+                    <div className="flex items-center gap-1.5">
+                      <Sunrise className="w-3 h-3 text-amber-400 shrink-0" />
+                      <div>
+                        <span className="text-muted-foreground block leading-none mb-0.5">Rises</span>
+                        <span className="text-foreground">
+                          {star.isCircumpolar ? 'Always up' : star.riseTime ? formatLocalTime(star.riseTime) : 'Never rises'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Sunset className="w-3 h-3 text-orange-400 shrink-0" />
+                      <div>
+                        <span className="text-muted-foreground block leading-none mb-0.5">Sets</span>
+                        <span className="text-foreground">
+                          {star.isCircumpolar ? 'Never sets' : star.setTime ? formatLocalTime(star.setTime) : 'Never rises'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </Card>

@@ -400,6 +400,62 @@ const BRIGHT_STARS = [
   { name: "Alkaid", ra: 13.7923, dec: 49.3133, mag: 1.85, spectral: "B3V", dist: 101, constellation: "Ursa Major", desc: "The tip of the Big Dipper's handle. Despite being in Ursa Major, it is not gravitationally bound to the cluster." },
 ];
 
+/**
+ * Compute rise and set times for a fixed star (RA/Dec) using sidereal time.
+ * Returns null times for circumpolar stars (never set) or stars that never rise.
+ */
+function getStarRiseSet(
+  star: { ra: number; dec: number },
+  date: Date,
+  lat: number,
+  lon: number
+): { rise: Date | null; set: Date | null; isCircumpolar: boolean } {
+  const latRad = lat * Math.PI / 180;
+  const decRad = star.dec * Math.PI / 180;
+  // Standard atmospheric refraction dip for stars at horizon
+  const h0Rad = -0.5667 * Math.PI / 180;
+
+  // Hour angle at rise/set: cos(HA) = (sin(h0) - sin(dec)*sin(lat)) / (cos(dec)*cos(lat))
+  const cosHA =
+    (Math.sin(h0Rad) - Math.sin(decRad) * Math.sin(latRad)) /
+    (Math.cos(decRad) * Math.cos(latRad));
+
+  if (cosHA < -1) {
+    // Star never dips below horizon: circumpolar
+    return { rise: null, set: null, isCircumpolar: true };
+  }
+  if (cosHA > 1) {
+    // Star never rises above horizon
+    return { rise: null, set: null, isCircumpolar: false };
+  }
+
+  const HAHours = (Math.acos(cosHA) * 180 / Math.PI) / 15; // degrees → hours
+
+  // Rise and set in Local Sidereal Time
+  const riseLST = ((star.ra - HAHours) % 24 + 24) % 24;
+  const setLST  = ((star.ra + HAHours) % 24 + 24) % 24;
+
+  // Convert LST to UTC via Greenwich Mean Sidereal Time at midnight
+  const midnight = new Date(date);
+  midnight.setUTCHours(0, 0, 0, 0);
+  const gmst0 = Astronomy.SiderealTime(midnight); // hours
+
+  // LST = GMST + lon/15  →  GMST = LST - lon/15
+  const riseGMST = ((riseLST - lon / 15) % 24 + 24) % 24;
+  const setGMST  = ((setLST  - lon / 15) % 24 + 24) % 24;
+
+  // GMST advances ~1.00274 sidereal hours per solar hour
+  const siderealRate = 1.00274;
+  const riseDeltaHours = ((riseGMST - gmst0) % 24 + 24) % 24 / siderealRate;
+  const setDeltaHours  = ((setGMST  - gmst0) % 24 + 24) % 24 / siderealRate;
+
+  return {
+    rise: new Date(midnight.getTime() + riseDeltaHours * 3_600_000),
+    set:  new Date(midnight.getTime() + setDeltaHours  * 3_600_000),
+    isCircumpolar: false,
+  };
+}
+
 export function computeStars(date: Date, lat: number, lon: number): StarData[] {
   const observer = makeObserver(lat, lon);
   const stars: StarData[] = [];
@@ -411,31 +467,11 @@ export function computeStars(date: Date, lat: number, lon: number): StarData[] {
       const altitude = Math.round(horizontal.altitude * 10) / 10;
       const azimuth = Math.round(horizontal.azimuth * 10) / 10;
 
-      // Circumpolar if star never sets: Dec > (90 - lat) for north hemisphere
-      const isCircumpolar = Math.abs(star.dec) > (90 - Math.abs(lat));
+      // Compute accurate rise/set using sidereal time
+      const { rise, set, isCircumpolar } = getStarRiseSet(star, date, lat, lon);
 
-      // Approximate rise/set for stars (fixed RA/Dec)
-      let riseTime: string | null = null;
-      let setTime: string | null = null;
-
-      if (!isCircumpolar) {
-        try {
-          const noon = new Date(date);
-          noon.setHours(0, 0, 0, 0);
-          // For stars, we can compute rise/set using the GHA method or approximate
-          // Using a simple approach: star rises when LST = RA - HA
-          const cosHA = (Math.sin(-0.5 * Math.PI / 180) - Math.sin(star.dec * Math.PI / 180) * Math.sin(lat * Math.PI / 180)) / (Math.cos(star.dec * Math.PI / 180) * Math.cos(lat * Math.PI / 180));
-          if (Math.abs(cosHA) <= 1) {
-            const HA = Math.acos(cosHA) * 180 / Math.PI; // degrees
-            // Approximate using sidereal time — simplified
-            // Just mark that it rises and sets
-            riseTime = null; // Would need full sidereal computation
-            setTime = null;
-          }
-        } catch {
-          // ignore
-        }
-      }
+      const riseTime = formatTime(rise);
+      const setTime  = formatTime(set);
 
       stars.push({
         name: star.name,

@@ -9,10 +9,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Map as MapIcon, Info, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Map as MapIcon, Info, X, Sunrise, Sunset } from 'lucide-react';
 
 // ─── Polar projection helpers ──────────────────────────────────────────────────
 // Center = zenith (alt 90°), edge = horizon (alt 0°)
 // North at top, East at right (standard astronomical view)
+import { formatLocalTime } from '@/lib/utils/astronomy';
 function altAzToXY(alt: number, az: number, cx: number, cy: number, R: number) {
   const r = ((90 - Math.max(0, alt)) / 90) * R;
   const rad = (az * Math.PI) / 180;
@@ -76,6 +78,9 @@ interface SkyObject {
   extra: string; // e.g. constellation, type
   spectralType?: string;
   isVisible?: boolean;
+  riseTime?: string | null;
+  setTime?: string | null;
+  isCircumpolar?: boolean;
 }
 
 interface TooltipState {
@@ -194,6 +199,9 @@ export default function SkyMap() {
         description: s.description,
         extra: s.constellation,
         spectralType: s.spectralType,
+        riseTime: s.riseTime,
+        setTime: s.setTime,
+        isCircumpolar: s.isCircumpolar,
       });
     });
 
@@ -812,9 +820,25 @@ export default function SkyMap() {
                       <span className="text-foreground">{obj.azimuth.toFixed(0)}°</span>
                     </div>
                   </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-3">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
                     {obj.description}
                   </p>
+                  {obj.kind === 'star' && (
+                    <div className="grid grid-cols-2 gap-1 text-[10px] font-mono mt-2 bg-background/40 rounded-lg p-1.5">
+                      <div className="flex items-center gap-1">
+                        <Sunrise className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span className="text-muted-foreground">
+                          {obj.isCircumpolar ? 'Always up' : obj.riseTime ? formatLocalTime(obj.riseTime) : 'Never rises'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Sunset className="w-3 h-3 text-orange-400 shrink-0" />
+                        <span className="text-muted-foreground">
+                          {obj.isCircumpolar ? 'Never sets' : obj.setTime ? formatLocalTime(obj.setTime) : 'Never rises'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );

@@ -62,17 +62,17 @@ export default function Dashboard() {
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-4xl md:text-5xl font-bold font-sans tracking-tight mb-2">Tonight's Sky</h1>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 mt-1">
               <p className="text-muted-foreground font-mono text-sm flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 Observatory locked to: <span className="text-foreground">{locationName}</span>
               </p>
               <button
                 onClick={() => setChangingLocation(v => !v)}
-                className="text-xs font-mono text-primary/70 hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/40 bg-primary/10 text-primary text-xs font-mono font-medium hover:bg-primary/20 hover:border-primary/70 transition-colors"
               >
-                <MapPin className="w-3 h-3" />
-                {changingLocation ? 'cancel' : 'change'}
+                <MapPin className="w-3.5 h-3.5" />
+                {changingLocation ? 'Cancel' : 'Change Location'}
               </button>
             </div>
           </div>
