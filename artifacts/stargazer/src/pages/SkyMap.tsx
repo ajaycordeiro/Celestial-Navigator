@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useSkyLocation } from '@/contexts/LocationContext';
 import {
   useGetPlanets, getGetPlanetsQueryKey,
@@ -7,7 +7,7 @@ import {
 } from '@workspace/api-client-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Map as MapIcon, Info, X } from 'lucide-react';
+import { Map as MapIcon, Info, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── Polar projection helpers ──────────────────────────────────────────────────
@@ -66,7 +66,8 @@ const CONSTELLATION_LINES: [string, string][] = [
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface SkyObject {
   id: string;
-  label: string;
+  label: string;        // display label — for DSOs includes the Messier ID, e.g. "Orion Nebula (M42)"
+  catalogId?: string;   // raw catalog ID, e.g. "M42" — used as an additional search token
   kind: 'planet' | 'star' | 'dso';
   altitude: number;
   azimuth: number;
@@ -117,6 +118,24 @@ export default function SkyMap() {
   };
 
   const activeMagLimit = VISIBILITY_MODES.find(m => m.key === visibilityMode)!.magLimit;
+
+  // ── Search state ──────────────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [selectedSearch, setSelectedSearch] = useState<SkyObject | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   // Observe SVG size for responsiveness
   const containerRef = useCallback((node: HTMLDivElement | null) => {
@@ -181,7 +200,8 @@ export default function SkyMap() {
     dsos?.forEach((d) => {
       items.push({
         id: `dso-${d.id}`,
-        label: d.name,
+        label: `${d.name} (${d.id})`,
+        catalogId: d.id,
         kind: 'dso',
         altitude: d.altitude,
         azimuth: d.azimuth,
@@ -202,6 +222,26 @@ export default function SkyMap() {
     return map;
   }, [stars]);
 
+  // ── Search results (across ALL objects, ignoring mag/horizon filters) ─────────
+  const searchResults = useMemo<SkyObject[]>(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return skyObjects
+      .filter((o) => {
+        const nameMatch = o.label.toLowerCase().includes(q);
+        const extraMatch = o.extra.toLowerCase().includes(q);
+        // Direct Messier ID match: "m42", "m 42", "42" all hit catalogId "M42"
+        const catalogMatch = o.catalogId
+          ? o.catalogId.toLowerCase().includes(q) ||
+            o.catalogId.toLowerCase().replace(/\s/g, '') === q.replace(/\s/g, '') ||
+            // also match bare number: "42" → "m42"
+            (`m${q}` === o.catalogId.toLowerCase())
+          : false;
+        return nameMatch || extraMatch || catalogMatch;
+      })
+      .slice(0, 8);
+  }, [skyObjects, searchQuery]);
+
   // ── SVG geometry ─────────────────────────────────────────────────────────────
   const padding = 44;
   const cx = svgSize / 2;
@@ -218,6 +258,33 @@ export default function SkyMap() {
   }
 
   function closeTooltip() {
+    setTooltip(null);
+  }
+
+  // ── Select a search result → highlight on map + open tooltip ────────────────
+  function selectSearchResult(obj: SkyObject) {
+    setSearchQuery(obj.label);
+    setSearchOpen(false);
+    setSelectedSearch(obj);
+    setTooltip(null);
+
+    // If above horizon: compute SVG coords and open tooltip there
+    if (obj.altitude > 0) {
+      const svgEl = svgRef.current;
+      const containerEl = svgEl?.parentElement;
+      // Derive current rendered size from DOM or fall back to state
+      const renderedSize = svgEl ? svgEl.getBoundingClientRect().width : svgSize;
+      const scale = renderedSize / svgSize;
+      const padded = svgSize / 2 - padding;
+      const { x, y } = altAzToXY(obj.altitude, obj.azimuth, svgSize / 2, svgSize / 2, padded);
+      setTooltip({ obj, svgX: x, svgY: y });
+    }
+  }
+
+  function clearSearch() {
+    setSearchQuery('');
+    setSearchOpen(false);
+    setSelectedSearch(null);
     setTooltip(null);
   }
 
@@ -262,7 +329,13 @@ export default function SkyMap() {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
-  const aboveHorizon = skyObjects.filter((o) => o.altitude > 0 && o.magnitude <= activeMagLimit);
+  // Always include the selected search result even if it exceeds the magnitude filter,
+  // so its highlight ring and tooltip anchor are present on the map.
+  const aboveHorizon = skyObjects.filter((o) => {
+    if (o.altitude <= 0) return false;
+    if (selectedSearch && o.id === selectedSearch.id) return true; // always show selected
+    return o.magnitude <= activeMagLimit;
+  });
   const belowHorizon = skyObjects.filter((o) => o.altitude <= 0 && o.magnitude <= activeMagLimit);
 
   // Tooltip position: keep inside SVG bounds
@@ -302,6 +375,100 @@ export default function SkyMap() {
           </div>
         </div>
       </header>
+
+      {/* ── Search ── */}
+      <div ref={searchContainerRef} className="relative w-full max-w-[640px]">
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSearchOpen(true);
+              if (!e.target.value) { setSelectedSearch(null); setTooltip(null); }
+            }}
+            onFocus={() => { if (searchQuery) setSearchOpen(true); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') { clearSearch(); searchInputRef.current?.blur(); }
+            }}
+            placeholder="Search stars, planets, Messier objects…"
+            className="w-full pl-9 pr-8 py-2 text-sm font-mono bg-card/50 border border-border/60 rounded-lg text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 transition-colors"
+          />
+          {searchQuery && (
+            <button onClick={clearSearch} className="absolute right-2.5 text-muted-foreground hover:text-foreground transition-colors">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Dropdown */}
+        <AnimatePresence>
+          {searchOpen && searchResults.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12 }}
+              className="absolute z-30 top-full mt-1 w-full bg-card/95 backdrop-blur-md border border-border/70 rounded-xl shadow-xl overflow-hidden"
+            >
+              {searchResults.map((obj) => {
+                const aboveH = obj.altitude > 0;
+                const kindColor = obj.kind === 'planet' ? '#fbbf24' : obj.kind === 'star' ? '#f8fafc' : '#38bdf8';
+                const kindLabel = obj.kind === 'planet' ? 'Planet' : obj.kind === 'star' ? 'Star' : 'Deep Sky';
+                return (
+                  <button
+                    key={obj.id}
+                    onMouseDown={(e) => { e.preventDefault(); selectSearchResult(obj); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-primary/10 transition-colors border-b border-border/30 last:border-0"
+                  >
+                    <svg width="10" height="10" className="shrink-0">
+                      <circle cx="5" cy="5" r="4" fill={kindColor} opacity={aboveH ? 1 : 0.4} />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-mono text-foreground truncate block">{obj.label}</span>
+                      <span className="text-[10px] text-muted-foreground truncate block">{obj.extra}</span>
+                    </div>
+                    <div className="shrink-0 flex flex-col items-end gap-0.5">
+                      <span className="text-[10px] font-mono text-muted-foreground/70">{kindLabel}</span>
+                      <span className={`text-[10px] font-mono ${aboveH ? 'text-primary/70' : 'text-red-400/70'}`}>
+                        {aboveH ? `↑ ${obj.altitude.toFixed(0)}°` : 'below horizon'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+          {searchOpen && searchQuery.trim() && searchResults.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute z-30 top-full mt-1 w-full bg-card/95 backdrop-blur-md border border-border/70 rounded-xl shadow-xl px-4 py-3 text-sm text-muted-foreground font-mono"
+            >
+              No objects found for "{searchQuery}"
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Below-horizon notice for selected object */}
+        {selectedSearch && selectedSearch.altitude <= 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-2 flex items-center gap-3 bg-card/40 border border-border/40 rounded-lg px-3 py-2.5 text-xs font-mono"
+          >
+            <Info className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+            <div>
+              <span className="text-foreground/80">{selectedSearch.label}</span>
+              <span className="text-muted-foreground"> is currently {Math.abs(selectedSearch.altitude).toFixed(1)}° below the horizon</span>
+              <span className="text-muted-foreground/60"> · alt {selectedSearch.altitude.toFixed(1)}° az {selectedSearch.azimuth.toFixed(0)}°</span>
+            </div>
+          </motion.div>
+        )}
+      </div>
 
       {/* ── Visibility filter ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -477,6 +644,10 @@ export default function SkyMap() {
               const { x, y } = altAzToXY(obj.altitude, obj.azimuth, cx, cy, R);
               const r = magToRadius(obj.magnitude);
               const isSelected = tooltip?.obj.id === obj.id;
+              const isSearchMatch = selectedSearch ? obj.id === selectedSearch.id : false;
+              // Only dim when the selected result is above the horizon and renderable on the map
+              const searchIsOnMap = selectedSearch ? selectedSearch.altitude > 0 : false;
+              const isSearchDimmed = searchIsOnMap && !isSearchMatch;
 
               let fill: string;
               let glow: string;
@@ -492,22 +663,32 @@ export default function SkyMap() {
               }
 
               return (
-                <g key={obj.id} style={{ cursor: 'pointer' }}>
-                  {/* Glow */}
-                  {(obj.kind === 'planet' || (obj.kind === 'star' && obj.magnitude < 1.5)) && (
+                <g key={obj.id} style={{ cursor: 'pointer', opacity: isSearchDimmed ? 0.12 : 1, transition: 'opacity 0.2s' }}>
+                  {/* Search highlight ring */}
+                  {isSearchMatch && (
                     <circle
-                      cx={x} cy={y} r={r + 4}
+                      cx={x} cy={y} r={r + 8}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.5)"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 3"
+                    />
+                  )}
+                  {/* Glow */}
+                  {(obj.kind === 'planet' || (obj.kind === 'star' && obj.magnitude < 1.5) || isSearchMatch) && (
+                    <circle
+                      cx={x} cy={y} r={isSearchMatch ? r + 10 : r + 4}
                       fill={glow}
-                      opacity={isSelected ? 0.9 : 0.5}
+                      opacity={isSelected || isSearchMatch ? 0.9 : 0.5}
                     />
                   )}
                   {/* Dot */}
                   <circle
-                    cx={x} cy={y} r={isSelected ? r + 2 : r}
+                    cx={x} cy={y} r={isSelected || isSearchMatch ? r + 2 : r}
                     fill={fill}
                     opacity={obj.kind === 'dso' ? 0.75 : 1}
-                    stroke={isSelected ? 'rgba(255,255,255,0.8)' : 'transparent'}
-                    strokeWidth={isSelected ? 1.5 : 0}
+                    stroke={isSelected || isSearchMatch ? 'rgba(255,255,255,0.8)' : 'transparent'}
+                    strokeWidth={isSelected || isSearchMatch ? 1.5 : 0}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleObjectClick(obj, x, y);
@@ -530,13 +711,13 @@ export default function SkyMap() {
                     fill="transparent"
                     onClick={(e) => { e.stopPropagation(); handleObjectClick(obj, x, y); }}
                   />
-                  {/* Label for bright objects */}
-                  {obj.magnitude < 1.5 && (
+                  {/* Label for bright objects or search match */}
+                  {(obj.magnitude < 1.5 || isSearchMatch) && obj.kind !== 'planet' && (
                     <text
-                      x={x + r + 4}
+                      x={x + r + 6}
                       y={y + 1}
-                      fontSize="9"
-                      fill="rgba(203,213,225,0.7)"
+                      fontSize={isSearchMatch ? '10' : '9'}
+                      fill={isSearchMatch ? 'rgba(255,255,255,0.9)' : 'rgba(203,213,225,0.7)'}
                       fontFamily="monospace"
                       style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
@@ -545,10 +726,10 @@ export default function SkyMap() {
                   )}
                   {obj.kind === 'planet' && (
                     <text
-                      x={x + r + 4}
+                      x={x + r + 6}
                       y={y + 1}
-                      fontSize="9"
-                      fill="rgba(251,191,36,0.85)"
+                      fontSize={isSearchMatch ? '10' : '9'}
+                      fill={isSearchMatch ? 'rgba(255,255,255,0.9)' : 'rgba(251,191,36,0.85)'}
                       fontFamily="monospace"
                       style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
