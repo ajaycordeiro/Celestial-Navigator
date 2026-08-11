@@ -61,7 +61,7 @@ export default function Dashboard() {
       <div className="relative z-10 flex flex-col gap-8">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold font-sans tracking-tight mb-2">Tonight's Sky</h1>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-sans tracking-tight mb-2">Tonight's Sky</h1>
             <div className="flex flex-wrap items-center gap-3 mt-1">
               <p className="text-muted-foreground font-mono text-sm flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />

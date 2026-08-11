@@ -41,8 +41,8 @@ export default function Weather() {
   return (
     <div className="flex flex-col gap-8 pb-20">
       <header>
-        <h1 className="text-3xl font-bold font-sans flex items-center gap-3">
-          <CloudRainWind className="w-8 h-8 text-primary" />
+        <h1 className="text-2xl sm:text-3xl font-bold font-sans flex items-center gap-3">
+          <CloudRainWind className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
           Seeing Conditions
         </h1>
         <p className="text-muted-foreground mt-2">Atmospheric clarity and local weather affecting observation.</p>

@@ -91,8 +91,8 @@ export default function Moon() {
   return (
     <div className="flex flex-col gap-8 pb-20">
       <header>
-        <h1 className="text-3xl font-bold font-sans flex items-center gap-3">
-          <MoonIcon className="w-8 h-8 text-primary" />
+        <h1 className="text-2xl sm:text-3xl font-bold font-sans flex items-center gap-3">
+          <MoonIcon className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
           Lunar Telemetry
         </h1>
         <p className="text-muted-foreground mt-2">Current phase and orbital parameters.</p>
@@ -133,22 +133,22 @@ export default function Moon() {
             >
               <Card className="p-6 bg-card/60 backdrop-blur border-border/50 hover:border-primary/30 transition-colors">
                 <h3 className="text-sm font-mono text-muted-foreground uppercase mb-4 tracking-wider">Positional Data</h3>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-6">
                   <div>
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1"><Navigation className="w-4 h-4" /> Altitude</div>
-                    <div className="text-2xl font-mono">{moon.altitude.toFixed(1)}°</div>
+                    <div className="flex items-center gap-2 text-muted-foreground mb-1 text-sm"><Navigation className="w-4 h-4 shrink-0" /> Altitude</div>
+                    <div className="text-xl sm:text-2xl font-mono">{moon.altitude.toFixed(1)}°</div>
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1"><Compass className="w-4 h-4" /> Azimuth</div>
-                    <div className="text-2xl font-mono">{moon.azimuth.toFixed(0)}° <span className="text-sm text-primary">{getCompassDirection(moon.azimuth)}</span></div>
+                    <div className="flex items-center gap-2 text-muted-foreground mb-1 text-sm"><Compass className="w-4 h-4 shrink-0" /> Azimuth</div>
+                    <div className="text-xl sm:text-2xl font-mono">{moon.azimuth.toFixed(0)}° <span className="text-sm text-primary">{getCompassDirection(moon.azimuth)}</span></div>
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1"><Sunrise className="w-4 h-4" /> Moonrise</div>
-                    <div className="text-xl font-mono">{formatLocalTime(moon.riseTime)}</div>
+                    <div className="flex items-center gap-2 text-muted-foreground mb-1 text-sm"><Sunrise className="w-4 h-4 shrink-0" /> Moonrise</div>
+                    <div className="text-lg sm:text-xl font-mono">{formatLocalTime(moon.riseTime)}</div>
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1"><Sunset className="w-4 h-4" /> Moonset</div>
-                    <div className="text-xl font-mono">{formatLocalTime(moon.setTime)}</div>
+                    <div className="flex items-center gap-2 text-muted-foreground mb-1 text-sm"><Sunset className="w-4 h-4 shrink-0" /> Moonset</div>
+                    <div className="text-lg sm:text-xl font-mono">{formatLocalTime(moon.setTime)}</div>
                   </div>
                 </div>
               </Card>
@@ -161,14 +161,14 @@ export default function Moon() {
             >
               <Card className="p-6 bg-card/60 backdrop-blur border-border/50 hover:border-primary/30 transition-colors">
                 <h3 className="text-sm font-mono text-muted-foreground uppercase mb-4 tracking-wider">Orbital Metrics</h3>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-6">
                   <div>
                     <div className="text-muted-foreground mb-1 text-sm">Distance from Earth</div>
-                    <div className="text-2xl font-mono text-secondary glow-text-secondary">{moon.distanceKm.toLocaleString()} <span className="text-sm">km</span></div>
+                    <div className="text-lg sm:text-2xl font-mono text-secondary glow-text-secondary break-words">{moon.distanceKm.toLocaleString()} <span className="text-sm">km</span></div>
                   </div>
                   <div>
                     <div className="text-muted-foreground mb-1 text-sm">Age of Cycle</div>
-                    <div className="text-2xl font-mono">{moon.age.toFixed(1)} <span className="text-sm">days</span></div>
+                    <div className="text-lg sm:text-2xl font-mono">{moon.age.toFixed(1)} <span className="text-sm">days</span></div>
                   </div>
                 </div>
               </Card>

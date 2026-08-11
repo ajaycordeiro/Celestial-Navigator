@@ -59,17 +59,17 @@ export default function Planets() {
                   </svg>
                 </div>
 
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-2xl font-bold tracking-tight">{planet.name}</h2>
+                <div className="flex flex-wrap justify-between items-start mb-4 gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl sm:text-2xl font-bold tracking-tight">{planet.name}</h2>
                       {planet.isVisible && (
                         <Badge className="bg-primary/20 text-primary border-primary/30 hover:bg-primary/30">Visible Tonight</Badge>
                       )}
                     </div>
-                    <div className="text-sm text-muted-foreground font-mono mt-1">{planet.type} • {planet.constellation}</div>
+                    <div className="text-sm text-muted-foreground font-mono mt-1 break-words">{planet.type} • {planet.constellation}</div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0">
                     <div className="text-xl font-mono text-secondary">{formatMagnitude(planet.magnitude)}</div>
                     <div className="text-xs text-muted-foreground uppercase">Magnitude</div>
                   </div>
@@ -106,9 +106,9 @@ export default function Planets() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <p className="text-muted-foreground leading-relaxed flex-1 pr-4">{planet.description}</p>
-                  <div className="text-right font-mono text-xs whitespace-nowrap bg-accent px-3 py-2 rounded-md">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-sm gap-3">
+                  <p className="text-muted-foreground leading-relaxed flex-1">{planet.description}</p>
+                  <div className="text-right font-mono text-xs shrink-0 bg-accent px-3 py-2 rounded-md self-start sm:self-auto">
                     <span className="block text-muted-foreground">DISTANCE</span>
                     <span className="text-foreground">{planet.distanceAU.toFixed(2)} AU</span>
                   </div>

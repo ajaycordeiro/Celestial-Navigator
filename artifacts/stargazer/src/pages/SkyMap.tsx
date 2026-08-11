@@ -9,7 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Map as MapIcon, Info, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Map as MapIcon, Info, X, Sunrise, Sunset } from 'lucide-react';
 
 // ─── Polar projection helpers ──────────────────────────────────────────────────
 // Center = zenith (alt 90°), edge = horizon (alt 0°)

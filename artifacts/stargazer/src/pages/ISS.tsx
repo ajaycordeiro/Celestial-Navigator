@@ -18,8 +18,8 @@ export default function ISS() {
   return (
     <div className="flex flex-col gap-8 pb-20">
       <header>
-        <h1 className="text-3xl font-bold font-sans flex items-center gap-3">
-          <Satellite className="w-8 h-8 text-primary" />
+        <h1 className="text-2xl sm:text-3xl font-bold font-sans flex items-center gap-3">
+          <Satellite className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
           ISS Tracker
         </h1>
         <p className="text-muted-foreground mt-2">Real-time telemetry and visible flyovers for the International Space Station.</p>
@@ -109,12 +109,12 @@ export default function ISS() {
                             </div>
                           </div>
 
-                          <div className="flex gap-8 md:gap-12">
+                          <div className="flex flex-wrap gap-4 sm:gap-8 md:gap-12">
                             <div>
                               <div className="text-xs text-muted-foreground font-mono mb-1 flex items-center gap-1">
                                 <Navigation className="w-3 h-3" /> MAX ALT
                               </div>
-                              <div className={`text-xl font-mono ${pass.maxAltitude > 45 ? 'text-primary glow-text' : 'text-foreground'}`}>
+                              <div className={`text-lg sm:text-xl font-mono ${pass.maxAltitude > 45 ? 'text-primary glow-text' : 'text-foreground'}`}>
                                 {pass.maxAltitude}°
                               </div>
                             </div>
@@ -122,7 +122,7 @@ export default function ISS() {
                               <div className="text-xs text-muted-foreground font-mono mb-1 flex items-center gap-1">
                                 <MapPin className="w-3 h-3" /> APPROACH
                               </div>
-                              <div className="text-xl font-mono text-foreground">
+                              <div className="text-lg sm:text-xl font-mono text-foreground break-words">
                                 {pass.direction}
                               </div>
                             </div>

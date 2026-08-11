@@ -61,42 +61,45 @@ export function Shell({ children }: { children: ReactNode }) {
         </nav>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Mobile Header */}
-        <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-4 md:hidden z-20 shrink-0">
-          <Telescope className="w-6 h-6 text-primary mr-2" />
-          <span className="font-mono font-bold text-lg text-primary glow-text">StarGazer</span>
-        </header>
-        
-        <div className="flex-1 overflow-y-auto w-full relative z-0">
-          <div className="max-w-6xl mx-auto p-4 md:p-8 min-h-full flex flex-col">
-            {children}
-          </div>
-        </div>
-      </main>
-      
-      {/* Mobile Nav */}
-      <nav className="h-16 border-t border-border bg-background/95 backdrop-blur flex items-center justify-around px-2 md:hidden z-20 shrink-0">
-        {NAV_ITEMS.slice(0, 5).map((item) => {
-          const isActive = location === item.path;
-          const Icon = item.icon;
+      {/* Right column: stacks mobile header → content → bottom nav */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col relative overflow-hidden">
+          {/* Mobile Header */}
+          <header className="h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-4 md:hidden z-20 shrink-0">
+            <Telescope className="w-6 h-6 text-primary mr-2" />
+            <span className="font-mono font-bold text-lg text-primary glow-text">StarGazer</span>
+          </header>
           
-          return (
-            <Link 
-              key={item.path}
-              href={item.path}
-              className={cn(
-                "flex flex-col items-center justify-center w-12 h-12 transition-colors",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Icon className="w-5 h-5 mb-1" />
-              <span className="text-[10px] leading-none font-medium">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+          <div className="flex-1 overflow-y-auto w-full relative z-0">
+            <div className="max-w-6xl mx-auto p-4 md:p-8 min-h-full flex flex-col">
+              {children}
+            </div>
+          </div>
+        </main>
+        
+        {/* Mobile Bottom Nav — scrollable so all items are reachable */}
+        <nav className="h-16 border-t border-border bg-background/95 backdrop-blur-md flex items-center md:hidden z-20 shrink-0 overflow-x-auto scrollbar-none">
+          {NAV_ITEMS.map((item) => {
+            const isActive = location === item.path;
+            const Icon = item.icon;
+            
+            return (
+              <Link 
+                key={item.path}
+                href={item.path}
+                className={cn(
+                  "flex flex-col items-center justify-center min-w-[4.25rem] h-full px-1 transition-colors shrink-0",
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="w-5 h-5 mb-1" />
+                <span className="text-[9px] leading-none font-medium text-center whitespace-nowrap">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 }
