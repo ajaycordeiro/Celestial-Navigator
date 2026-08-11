@@ -15,7 +15,8 @@ import {
   CloudRainWind,
   Sunrise,
   Sunset,
-  ArrowRight
+  ArrowRight,
+  MapPin
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
@@ -37,6 +38,7 @@ const item = {
 
 export default function Dashboard() {
   const { lat, lon, locationName } = useSkyLocation();
+  const [changingLocation, setChangingLocation] = React.useState(false);
 
   const { data: overview, isLoading, error } = useGetSkyOverview(
     { lat: lat!, lon: lon! },
@@ -60,16 +62,31 @@ export default function Dashboard() {
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-4xl md:text-5xl font-bold font-sans tracking-tight mb-2">Tonight's Sky</h1>
-            <p className="text-muted-foreground font-mono text-sm flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-              Observatory locked to: <span className="text-foreground">{locationName}</span>
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="text-muted-foreground font-mono text-sm flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                Observatory locked to: <span className="text-foreground">{locationName}</span>
+              </p>
+              <button
+                onClick={() => setChangingLocation(v => !v)}
+                className="text-xs font-mono text-primary/70 hover:text-primary underline underline-offset-2 transition-colors flex items-center gap-1"
+              >
+                <MapPin className="w-3 h-3" />
+                {changingLocation ? 'cancel' : 'change'}
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground bg-card/40 px-4 py-2 rounded-lg border border-border/50 backdrop-blur">
              <span>LOCAL TIME</span>
              <span className="text-secondary">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
         </header>
+
+        {changingLocation && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <LocationPicker onDone={() => setChangingLocation(false)} />
+          </motion.div>
+        )}
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

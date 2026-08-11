@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { MapPin, Navigation, Crosshair, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export function LocationPicker() {
+export function LocationPicker({ onDone }: { onDone?: () => void } = {}) {
   const { lat, lon, locationName, setLocation, detectLocation, isDetecting, error } = useSkyLocation();
   const [manualInput, setManualInput] = useState('');
   
@@ -13,16 +13,19 @@ export function LocationPicker() {
     e.preventDefault();
     if (!manualInput.trim()) return;
     
-    // Simple parsing for "lat, lon" format
     const parts = manualInput.split(',').map(s => parseFloat(s.trim()));
     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
       setLocation(parts[0], parts[1], `Custom: ${parts[0]}, ${parts[1]}`);
       setManualInput('');
+      onDone?.();
     } else {
-      // In a real app we'd geocode the city name here.
-      // For now, if they enter something else, we just alert.
       alert('Please enter coordinates in "latitude, longitude" format, e.g., "51.5, -0.1".');
     }
+  };
+
+  const handleDetect = async () => {
+    await detectLocation();
+    onDone?.();
   };
 
   return (
@@ -46,7 +49,7 @@ export function LocationPicker() {
 
       <div className="space-y-4">
         <Button 
-          onClick={detectLocation} 
+          onClick={handleDetect} 
           disabled={isDetecting}
           className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-mono shadow-[0_0_15px_rgba(0,212,255,0.3)] transition-all"
         >
