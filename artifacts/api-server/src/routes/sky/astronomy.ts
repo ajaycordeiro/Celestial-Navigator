@@ -9,6 +9,16 @@ export interface Observer {
   lon: number;
 }
 
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+function getDayOfYear(date: Date): number {
+  const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 0));
+  const diff = date.getTime() - start.getTime();
+  return Math.floor(diff / 86400000);
+}
+
 function makeObserver(lat: number, lon: number) {
   return new Astronomy.Observer(lat, lon, 0);
 }
@@ -804,4 +814,64 @@ export function computeCelestialEvents(
   return events.sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
+}
+
+export interface AnalemmaPoint {
+  date: string;
+  dayOfYear: number;
+  month: number;
+  altitude: number;
+  azimuth: number;
+  declination: number;
+  isAboveHorizon: boolean;
+  isToday: boolean;
+}
+
+export interface AnalemmaResult {
+  points: AnalemmaPoint[];
+  observationHour: number;
+  year: number;
+}
+
+export function computeAnalemma(
+  lat: number,
+  lon: number,
+  hourUTC: number,
+  year: number
+): AnalemmaResult {
+  const observer = makeObserver(lat, lon);
+  const now = new Date();
+  const todayY = now.getUTCFullYear();
+  const todayM = now.getUTCMonth();
+  const todayD = now.getUTCDate();
+
+  const daysInYear = isLeapYear(year) ? 366 : 365;
+  const points: AnalemmaPoint[] = [];
+
+  for (let d = 1; d <= daysInYear; d++) {
+    // Build a UTC date at the requested hour for this day-of-year
+    const date = new Date(Date.UTC(year, 0, d, hourUTC, 0, 0, 0));
+    const month = date.getUTCMonth();
+
+    const equ = Astronomy.Equator(Astronomy.Body.Sun, date, observer, true, true);
+    const hor = Astronomy.Horizon(date, observer, equ.ra, equ.dec, "normal");
+
+    const isToday =
+      year === todayY &&
+      date.getUTCMonth() === todayM &&
+      date.getUTCDate() === todayD;
+
+    points.push({
+      date: date.toISOString().split("T")[0],
+      dayOfYear: d,
+      month,
+      altitude: Math.round(hor.altitude * 10) / 10,
+      azimuth: Math.round(hor.azimuth * 10) / 10,
+      declination: Math.round(equ.dec * 10) / 10,
+      isAboveHorizon: hor.altitude > 0,
+      isToday,
+    });
+  }
+
+  return { points, observationHour: hourUTC, year };
 }

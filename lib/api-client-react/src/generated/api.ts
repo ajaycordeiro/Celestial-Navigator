@@ -813,6 +813,52 @@ export function useGetSkyWeather<TData = Awaited<ReturnType<typeof getSkyWeather
 
 
 
+export const getGetAnalemmaUrl = (params: GetAnalemmaParams,) => {
+  const normalizedParams = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+  const stringifiedParams = normalizedParams.toString();
+  return stringifiedParams.length > 0 ? `/api/sky/analemma?${stringifiedParams}` : `/api/sky/analemma`
+}
+
+/**
+ * @summary Sun analemma – position at the same UTC hour every day of the year
+ */
+export const getAnalemma = async (params: GetAnalemmaParams, options?: Parameters<typeof customFetch>[1]): Promise<Analemma> => {
+  return customFetch<Analemma>(getGetAnalemmaUrl(params), { ...options, method: 'GET' });
+}
+
+export const getGetAnalemmaQueryKey = (params?: GetAnalemmaParams,) => {
+  return [`/api/sky/analemma`, ...(params ? [params] : [])] as const;
+}
+
+export const getGetAnalemmaQueryOptions = <TData = Awaited<ReturnType<typeof getAnalemma>>, TError = ErrorType<void>>(params: GetAnalemmaParams, options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getAnalemma>>, TError, TData>, request?: SecondParameter<typeof customFetch> }) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetAnalemmaQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAnalemma>>> = ({ signal }) => getAnalemma(params, { signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getAnalemma>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAnalemmaQueryResult = NonNullable<Awaited<ReturnType<typeof getAnalemma>>>
+export type GetAnalemmaQueryError = ErrorType<void>
+
+/**
+ * @summary Sun analemma – position at the same UTC hour every day of the year
+ */
+export function useGetAnalemma<TData = Awaited<ReturnType<typeof getAnalemma>>, TError = ErrorType<void>>(
+  params: GetAnalemmaParams, options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getAnalemma>>, TError, TData>, request?: SecondParameter<typeof customFetch> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAnalemmaQueryOptions(params, options)
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
 export const getSearchNasaImagesUrl = (params: SearchNasaImagesParams,) => {
   const normalizedParams = new URLSearchParams();
 

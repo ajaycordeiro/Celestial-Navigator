@@ -255,6 +255,38 @@ paths:
         "400":
           description: Missing or invalid parameters
 
+  /sky/analemma:
+    get:
+      operationId: getAnalemma
+      tags: [sky]
+      summary: Sun analemma – position at the same UTC hour every day of the year
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema: { type: number }
+        - name: lon
+          in: query
+          required: true
+          schema: { type: number }
+        - name: hour
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, maximum: 23 }
+        - name: year
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Analemma data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analemma"
+        "400":
+          description: Missing or invalid parameters
+
   /nasa/images:
     get:
       operationId: searchNasaImages
@@ -524,6 +556,46 @@ components:
         conditions:
           type: string
           description: e.g. "Excellent", "Good", "Fair", "Poor"
+
+    AnalemmaPoint:
+      type: object
+      required: [date, dayOfYear, month, altitude, azimuth, declination, isAboveHorizon, isToday]
+      properties:
+        date:
+          type: string
+          description: ISO date string YYYY-MM-DD
+        dayOfYear:
+          type: integer
+        month:
+          type: integer
+          description: 0-11
+        altitude:
+          type: number
+          description: Degrees above horizon
+        azimuth:
+          type: number
+          description: Compass bearing 0-360
+        declination:
+          type: number
+          description: Solar declination in degrees
+        isAboveHorizon:
+          type: boolean
+        isToday:
+          type: boolean
+
+    Analemma:
+      type: object
+      required: [points, observationHour, year]
+      properties:
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalemmaPoint"
+        observationHour:
+          type: integer
+          description: UTC hour used for computation (0-23)
+        year:
+          type: integer
 
     NasaImage:
       type: object

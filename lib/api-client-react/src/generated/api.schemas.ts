@@ -207,6 +207,36 @@ lat: number;
 lon: number;
 };
 
+export interface AnalemmaPoint {
+  /** ISO date string YYYY-MM-DD */
+  date: string;
+  dayOfYear: number;
+  /** 0-11 */
+  month: number;
+  /** Degrees above horizon */
+  altitude: number;
+  /** Compass bearing 0-360 */
+  azimuth: number;
+  /** Solar declination in degrees */
+  declination: number;
+  isAboveHorizon: boolean;
+  isToday: boolean;
+}
+
+export interface Analemma {
+  points: AnalemmaPoint[];
+  /** UTC hour used for computation (0-23) */
+  observationHour: number;
+  year: number;
+}
+
+export type GetAnalemmaParams = {
+lat: number;
+lon: number;
+hour?: number;
+year?: number;
+};
+
 export type SearchNasaImagesParams = {
 q: string;
 count?: number;

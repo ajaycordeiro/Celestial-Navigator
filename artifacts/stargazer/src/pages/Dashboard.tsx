@@ -15,6 +15,7 @@ import {
   Sunset,
   ArrowRight,
   MapPin,
+  Sun,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
@@ -172,6 +173,7 @@ export default function Dashboard() {
               <DashboardLink to="/deep-sky" icon={Compass} label="Deep Sky" />
               <DashboardLink to="/iss" icon={Satellite} label="ISS Tracker" />
               <DashboardLink to="/weather" icon={CloudRainWind} label="Conditions" />
+              <DashboardLink to="/analemma" icon={Sun} label="Analemma" />
             </div>
 
           </motion.div>

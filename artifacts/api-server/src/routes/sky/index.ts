@@ -8,6 +8,7 @@ import {
   GetCelestialEventsQueryParams,
   GetISSPassesQueryParams,
   GetSkyWeatherQueryParams,
+  GetAnalemmaQueryParams,
 } from "@workspace/api-zod";
 import {
   computeSkyOverview,
@@ -16,6 +17,7 @@ import {
   computeStars,
   computeDeepSkyObjects,
   computeCelestialEvents,
+  computeAnalemma,
 } from "./astronomy.js";
 
 const router: IRouter = Router();
@@ -277,6 +279,19 @@ router.get("/sky/weather", async (req, res): Promise<void> => {
       conditions: "Fair",
     });
   }
+});
+
+router.get("/sky/analemma", async (req, res): Promise<void> => {
+  const parsed = GetAnalemmaQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { lat, lon, hour, year } = parsed.data;
+  const hourUTC = hour ?? 12;
+  const targetYear = year ?? new Date().getFullYear();
+  const result = computeAnalemma(lat, lon, hourUTC, targetYear);
+  res.json(result);
 });
 
 export default router;

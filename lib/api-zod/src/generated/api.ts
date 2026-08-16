@@ -211,6 +211,34 @@ export const GetSkyWeatherResponse = zod.object({
 
 
 /**
+ * @summary Sun analemma – position at the same UTC hour every day of the year
+ */
+export const GetAnalemmaQueryParams = zod.object({
+  "lat": zod.coerce.number(),
+  "lon": zod.coerce.number(),
+  "hour": zod.coerce.number().min(0).max(23).optional(),
+  "year": zod.coerce.number().optional()
+})
+
+export const GetAnalemmaResponsePointItem = zod.object({
+  "date": zod.string(),
+  "dayOfYear": zod.number(),
+  "month": zod.number(),
+  "altitude": zod.number(),
+  "azimuth": zod.number(),
+  "declination": zod.number(),
+  "isAboveHorizon": zod.boolean(),
+  "isToday": zod.boolean(),
+})
+
+export const GetAnalemmaResponse = zod.object({
+  "points": zod.array(GetAnalemmaResponsePointItem),
+  "observationHour": zod.number(),
+  "year": zod.number(),
+})
+
+
+/**
  * @summary Search NASA image library for a celestial object
  */
 export const SearchNasaImagesQueryParams = zod.object({
