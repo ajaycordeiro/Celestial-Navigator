@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useSkyLocation } from '@/contexts/LocationContext';
 import { useGetAnalemma, getGetAnalemmaQueryKey } from '@workspace/api-client-react';
+import { getTzAbbr } from '@/lib/utils/astronomy';
 import { motion } from 'framer-motion';
 import { LocationPicker } from '@/components/LocationPicker';
 import { Card } from '@/components/ui/card';
@@ -18,7 +19,54 @@ import {
 import { Sun, MapPin, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Seasonal dot colour
+// ── Timezone conversion ──────────────────────────────────────────────────────
+/**
+ * Convert a local hour (0-23) in the given IANA timezone to the equivalent
+ * UTC hour (0-23). Uses noon UTC as a reference point to avoid DST/midnight
+ * edge cases. Accurate to the nearest whole hour (½-hour offsets like IST
+ * are rounded).
+ */
+function localHourToUtcHour(localHour: number, timezone: string): number {
+  if (!timezone) return localHour;
+  try {
+    const ref = new Date();
+    ref.setUTCHours(12, 0, 0, 0); // noon UTC – safe reference
+
+    // What local hour does noon UTC map to in the target timezone?
+    const raw = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      hour12: false,
+    }).format(ref);
+    const localAtNoonUtc = parseInt(raw, 10) % 24; // handle '24' midnight edge
+
+    // UTC = local + offset  ⟹  offset = 12 − localAtNoonUtc
+    let offset = 12 - localAtNoonUtc;
+    if (offset >  12) offset -= 24;
+    if (offset < -12) offset += 24;
+
+    return ((localHour + offset) % 24 + 24) % 24;
+  } catch {
+    return localHour;
+  }
+}
+
+/** What local hour does the current moment correspond to in the timezone? */
+function currentLocalHour(timezone: string): number {
+  if (!timezone) return 12;
+  try {
+    const raw = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      hour: 'numeric',
+      hour12: false,
+    }).format(new Date());
+    return parseInt(raw, 10) % 24;
+  } catch {
+    return 12;
+  }
+}
+
+// ── Seasonal colours ─────────────────────────────────────────────────────────
 function seasonColor(month: number): string {
   if (month === 11 || month <= 1) return '#60A5FA'; // winter – blue
   if (month <= 4)                 return '#4ADE80'; // spring – green
@@ -36,7 +84,10 @@ const SEASONS = [
 const DENSITIES = ['Daily', 'Weekly', 'Monthly'] as const;
 type Density = typeof DENSITIES[number];
 
-// Custom scatter dot
+// Module-level ref so CustomDot (defined outside the component) can read it
+let _density: Density = 'Daily';
+
+// ── Custom dot renderer ───────────────────────────────────────────────────────
 function CustomDot(props: any) {
   const { cx, cy, payload } = props;
   if (!cx || !cy || isNaN(cx) || isNaN(cy)) return null;
@@ -44,22 +95,21 @@ function CustomDot(props: any) {
     return (
       <g>
         <circle cx={cx} cy={cy} r={10} fill="none" stroke="#22d3ee" strokeWidth={1.5} opacity={0.4} />
-        <circle cx={cx} cy={cy} r={6} fill="#FFFFFF" stroke="#22d3ee" strokeWidth={1.5} />
+        <circle cx={cx} cy={cy} r={6}  fill="#FFFFFF" stroke="#22d3ee" strokeWidth={1.5} />
       </g>
     );
   }
+  const r = _density === 'Monthly' ? 5 : _density === 'Weekly' ? 4 : 3;
   return (
     <circle
-      cx={cx}
-      cy={cy}
-      r={density === 'Monthly' ? 5 : density === 'Weekly' ? 4 : 3}
+      cx={cx} cy={cy} r={r}
       fill={seasonColor(payload.month)}
       opacity={payload.isAboveHorizon ? 0.85 : 0.18}
     />
   );
 }
 
-// Recharts tooltip
+// ── Tooltip ───────────────────────────────────────────────────────────────────
 function CustomTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
@@ -80,15 +130,26 @@ function CustomTooltip({ active, payload }: any) {
   );
 }
 
-// Module-level density reference (needed inside CustomDot which can't close over state easily)
-let density: Density = 'Daily';
+// ── Page ──────────────────────────────────────────────────────────────────────
+const pad = (n: number) => String(n).padStart(2, '0');
+const axisStyle = { fill: '#64748b', fontSize: 11, fontFamily: 'monospace' };
 
 export default function Analemma() {
-  const { lat, lon, locationName } = useSkyLocation();
-  const [hourUTC, setHourUTC] = useState(12);
+  const { lat, lon, locationName, timezone } = useSkyLocation();
+
+  // Slider tracks LOCAL hour in the selected location's timezone.
+  // Default = current local hour (so the chart opens at "now").
+  const [localHour, setLocalHour] = useState(() => currentLocalHour(timezone));
   const [activeDensity, setActiveDensity] = useState<Density>('Daily');
-  density = activeDensity;
+  _density = activeDensity;
+
   const year = new Date().getFullYear();
+
+  // Convert local hour → UTC hour for the API call
+  const hourUTC = localHourToUtcHour(localHour, timezone);
+
+  const tzLabel    = getTzAbbr(timezone);
+  const displayTime = `${pad(localHour)}:00${tzLabel ? ` ${tzLabel}` : ''}`;
 
   const { data, isLoading } = useGetAnalemma(
     { lat: lat!, lon: lon!, hour: hourUTC, year },
@@ -110,12 +171,7 @@ export default function Analemma() {
 
   const todayPoint = data?.points.find(p => p.isToday);
   const aboveCount = filteredPoints.filter(p => p.isAboveHorizon).length;
-  const totalCount  = filteredPoints.length;
-
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const displayTime = `${pad(hourUTC)}:00 UTC`;
-
-  const axisStyle = { fill: '#64748b', fontSize: 11, fontFamily: 'monospace' };
+  const totalCount = filteredPoints.length;
 
   if (!lat || !lon) {
     return (
@@ -151,7 +207,7 @@ export default function Analemma() {
         {/* Controls */}
         <Card className="p-4 bg-card/60 backdrop-blur border-border/50">
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 sm:items-center">
-            {/* Time slider */}
+            {/* Time slider — local time in selected timezone */}
             <div className="flex-1">
               <div className="flex justify-between items-center mb-2">
                 <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
@@ -164,8 +220,8 @@ export default function Analemma() {
                 min={0}
                 max={23}
                 step={1}
-                value={hourUTC}
-                onChange={e => setHourUTC(Number(e.target.value))}
+                value={localHour}
+                onChange={e => setLocalHour(Number(e.target.value))}
                 className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-primary bg-border"
               />
               <div className="flex justify-between text-[10px] text-muted-foreground font-mono mt-1">
@@ -241,12 +297,14 @@ export default function Analemma() {
                     tick={axisStyle}
                     label={{ value: 'Altitude (°)', angle: -90, position: 'insideLeft', style: axisStyle }}
                   />
-                  <ReferenceLine y={0} stroke="#334155" strokeDasharray="4 2" label={{ value: 'Horizon', fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#334155', strokeWidth: 1 }} />
-                  <Scatter
-                    data={filteredPoints}
-                    shape={<CustomDot />}
+                  <ReferenceLine
+                    y={0}
+                    stroke="#334155"
+                    strokeDasharray="4 2"
+                    label={{ value: 'Horizon', fill: '#64748b', fontSize: 10, fontFamily: 'monospace' }}
                   />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#334155', strokeWidth: 1 }} />
+                  <Scatter data={filteredPoints} shape={<CustomDot />} />
                 </ScatterChart>
               </ResponsiveContainer>
             )}
@@ -292,10 +350,10 @@ export default function Analemma() {
         {/* Explainer */}
         <Card className="p-4 bg-card/40 backdrop-blur border-border/40 text-xs font-mono text-muted-foreground leading-relaxed">
           <span className="text-foreground font-semibold">What am I looking at? </span>
-          Each dot is the sun's position (altitude vs azimuth) at <span className="text-primary">{displayTime}</span> on one day of {year}.
-          The figure-8 shape — the analemma — forms because Earth's orbit is slightly elliptical and its axis is tilted.
-          The two lobes correspond to summer and winter, and the shape tilts differently depending on your latitude.
-          Faint dots are when the sun is below the horizon at that time.
+          Each dot is the sun's position at <span className="text-primary">{displayTime}</span> on one day of {year},
+          as seen from <span className="text-foreground">{locationName?.split(',')[0]}</span>.
+          The figure-8 shape — the analemma — forms because Earth's orbit is elliptical and its axis is tilted.
+          The two lobes correspond to summer and winter. Faint dots are days when the sun is below the horizon at that time.
         </Card>
 
       </div>
