@@ -118,7 +118,7 @@ export default function Dashboard() {
                     <span className="font-mono text-xs text-muted-foreground uppercase">Illumination</span>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold font-mono glow-text">{Math.round(overview.moonIllumination * 100)}%</div>
+                    <div className="text-3xl font-bold font-mono glow-text">{overview.moonIllumination.toFixed(1)}%</div>
                     <div className="text-sm text-muted-foreground mt-1">{overview.moonPhaseName}</div>
                   </div>
                 </Card>
