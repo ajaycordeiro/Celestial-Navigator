@@ -377,7 +377,7 @@ export default function Analemma() {
         <Card className="p-4 bg-card/40 backdrop-blur border-border/40 text-xs font-mono text-muted-foreground leading-relaxed">
           <span className="text-foreground font-semibold">What am I looking at? </span>
           Each dot is the sun's position at <span className="text-primary">{displayTime}</span> on one day of {year},
-          as seen from <span className="text-foreground">{locationName?.split(',')[0]}</span>.
+          as seen from <span className="text-foreground">{locationName?.includes('°') ? locationName : locationName?.split(',')[0]}</span>.
           The figure-8 shape — the analemma — forms because Earth's orbit is elliptical and its axis is tilted.
           The two lobes correspond to summer and winter. Faint dots are days when the sun is below the horizon at that time.
         </Card>
