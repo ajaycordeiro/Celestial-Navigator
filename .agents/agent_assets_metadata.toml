@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "DdbYqxq_izZ_gmClIOvdz"
+uri = "file://StarGazer-Project-Document.docx"
+type = "word_document"
+title = "StarGazer — Project Document"
+description = "Word document covering project overview, tech stack, data sources, prompts used, iterations, bugs fixed, and learnings from the vibe coding session."
