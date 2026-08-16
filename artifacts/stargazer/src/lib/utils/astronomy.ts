@@ -1,26 +1,48 @@
-export function formatLocalTime(isoString: string | null | undefined): string {
+export function formatLocalTime(
+  isoString: string | null | undefined,
+  timezone?: string
+): string {
   if (!isoString) return '--:--';
   try {
     return new Date(isoString).toLocaleTimeString(undefined, {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
+      ...(timezone ? { timeZone: timezone } : {}),
     });
-  } catch (e) {
+  } catch {
     return '--:--';
   }
 }
 
-export function formatLocalDate(isoString: string | null | undefined): string {
+export function formatLocalDate(
+  isoString: string | null | undefined,
+  timezone?: string
+): string {
   if (!isoString) return '--';
   try {
     return new Date(isoString).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      ...(timezone ? { timeZone: timezone } : {}),
     });
-  } catch (e) {
+  } catch {
     return '--';
+  }
+}
+
+/** Returns the short timezone abbreviation, e.g. "IST", "EDT", "PST" */
+export function getTzAbbr(timezone?: string): string {
+  if (!timezone) return '';
+  try {
+    return (
+      new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'short' })
+        .formatToParts(new Date())
+        .find(p => p.type === 'timeZoneName')?.value ?? ''
+    );
+  } catch {
+    return '';
   }
 }
 
@@ -29,8 +51,7 @@ export function getCompassDirection(azimuth: number): string {
     'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
     'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
   ];
-  const index = Math.round(azimuth / 22.5) % 16;
-  return directions[index];
+  return directions[Math.round(azimuth / 22.5) % 16];
 }
 
 export function formatMagnitude(mag: number): string {

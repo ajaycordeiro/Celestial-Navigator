@@ -3,7 +3,7 @@ import { useSkyLocation } from '@/contexts/LocationContext';
 import { LocationPicker } from '@/components/LocationPicker';
 import { useGetSkyOverview, getGetSkyOverviewQueryKey } from '@workspace/api-client-react';
 import { motion } from 'framer-motion';
-import { formatLocalTime } from '@/lib/utils/astronomy';
+import { formatLocalTime, getTzAbbr } from '@/lib/utils/astronomy';
 import { Link } from 'wouter';
 import {
   Moon,
@@ -191,11 +191,11 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <div className="flex justify-between items-center border-b border-border/50 pb-2">
                       <span className="text-sm text-muted-foreground flex items-center gap-2"><Sunset className="w-4 h-4"/> Sunset</span>
-                      <span className="font-mono">{formatLocalTime(overview.sunsetTime)}</span>
+                      <span className="font-mono">{formatLocalTime(overview.sunsetTime, timezone)} <span className="text-[10px] text-muted-foreground">{getTzAbbr(timezone)}</span></span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">True Dark</span>
-                      <span className="font-mono text-primary">{formatLocalTime(overview.astronomicalTwilightEnd)}</span>
+                      <span className="font-mono text-primary">{formatLocalTime(overview.astronomicalTwilightEnd, timezone)} <span className="text-[10px] text-muted-foreground">{getTzAbbr(timezone)}</span></span>
                     </div>
                   </div>
                 </Card>

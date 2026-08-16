@@ -4,7 +4,7 @@ import { useGetMoon, getGetMoonQueryKey } from '@workspace/api-client-react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Moon as MoonIcon, Sunrise, Sunset, Navigation, Compass, Calendar, ArrowRight } from 'lucide-react';
-import { formatLocalTime, getCompassDirection, formatLocalDate } from '@/lib/utils/astronomy';
+import { formatLocalTime, formatLocalDate, getCompassDirection, getTzAbbr } from '@/lib/utils/astronomy';
 import { motion } from 'framer-motion';
 
 function MoonPhaseVisual({ phase }: { phase: number }) {
@@ -87,7 +87,8 @@ function MoonPhaseVisual({ phase }: { phase: number }) {
 }
 
 export default function Moon() {
-  const { lat, lon } = useSkyLocation();
+  const { lat, lon, timezone } = useSkyLocation();
+  const tzLabel = getTzAbbr(timezone);
   const { data: moon, isLoading } = useGetMoon(
     { lat: lat!, lon: lon! },
     { query: { enabled: !!lat && !!lon, queryKey: getGetMoonQueryKey({ lat: lat!, lon: lon! }) } }
@@ -149,11 +150,11 @@ export default function Moon() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 text-muted-foreground mb-1 text-sm"><Sunrise className="w-4 h-4 shrink-0" /> Moonrise</div>
-                    <div className="text-lg sm:text-xl font-mono">{formatLocalTime(moon.riseTime)}</div>
+                    <div className="text-lg sm:text-xl font-mono">{formatLocalTime(moon.riseTime, timezone)} {tzLabel && <span className="text-xs text-muted-foreground">{tzLabel}</span>}</div>
                   </div>
                   <div>
                     <div className="flex items-center gap-2 text-muted-foreground mb-1 text-sm"><Sunset className="w-4 h-4 shrink-0" /> Moonset</div>
-                    <div className="text-lg sm:text-xl font-mono">{formatLocalTime(moon.setTime)}</div>
+                    <div className="text-lg sm:text-xl font-mono">{formatLocalTime(moon.setTime, timezone)} {tzLabel && <span className="text-xs text-muted-foreground">{tzLabel}</span>}</div>
                   </div>
                 </div>
               </Card>
@@ -187,11 +188,11 @@ export default function Moon() {
             >
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col justify-between">
                 <div className="flex items-center gap-2 text-primary text-sm mb-2"><Calendar className="w-4 h-4"/> Next Full Moon</div>
-                <div className="text-lg font-mono font-medium">{formatLocalDate(moon.nextFullMoon)}</div>
+                <div className="text-lg font-mono font-medium">{formatLocalDate(moon.nextFullMoon, timezone)} {tzLabel && <span className="text-xs text-muted-foreground">{tzLabel}</span>}</div>
               </div>
               <div className="bg-background rounded-xl border border-border p-4 flex flex-col justify-between">
                 <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2"><Calendar className="w-4 h-4"/> Next New Moon</div>
-                <div className="text-lg font-mono font-medium">{formatLocalDate(moon.nextNewMoon)}</div>
+                <div className="text-lg font-mono font-medium">{formatLocalDate(moon.nextNewMoon, timezone)} {tzLabel && <span className="text-xs text-muted-foreground">{tzLabel}</span>}</div>
               </div>
             </motion.div>
 

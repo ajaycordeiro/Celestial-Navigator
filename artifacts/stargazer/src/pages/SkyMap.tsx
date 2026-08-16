@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ─── Polar projection helpers ──────────────────────────────────────────────────
 // Center = zenith (alt 90°), edge = horizon (alt 0°)
 // North at top, East at right (standard astronomical view)
-import { formatLocalTime } from '@/lib/utils/astronomy';
+import { formatLocalTime, getTzAbbr } from '@/lib/utils/astronomy';
 import { Map as MapIcon, Info, X, Search, Sunrise, Sunset, GitBranch } from 'lucide-react';
 import { CONSTELLATION_LINES } from '@/data/constellations';
 function altAzToXY(alt: number, az: number, cx: number, cy: number, R: number) {
@@ -79,7 +79,7 @@ const LS_KEY = 'stargazer-sky-visibility';
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 export default function SkyMap() {
-  const { lat, lon } = useSkyLocation();
+  const { lat, lon, timezone } = useSkyLocation();
   const svgRef = useRef<SVGSVGElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [svgSize, setSvgSize] = useState(520);
@@ -852,13 +852,13 @@ export default function SkyMap() {
                       <div className="flex items-center gap-1">
                         <Sunrise className="w-3 h-3 text-amber-400 shrink-0" />
                         <span className="text-muted-foreground">
-                          {obj.isCircumpolar ? 'Always up' : obj.riseTime ? formatLocalTime(obj.riseTime) : 'Never rises'}
+                          {obj.isCircumpolar ? 'Always up' : obj.riseTime ? formatLocalTime(obj.riseTime, timezone) : 'Never rises'}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Sunset className="w-3 h-3 text-orange-400 shrink-0" />
                         <span className="text-muted-foreground">
-                          {obj.isCircumpolar ? 'Never sets' : obj.setTime ? formatLocalTime(obj.setTime) : 'Never rises'}
+                          {obj.isCircumpolar ? 'Never sets' : obj.setTime ? formatLocalTime(obj.setTime, timezone) : 'Never rises'}
                         </span>
                       </div>
                     </div>

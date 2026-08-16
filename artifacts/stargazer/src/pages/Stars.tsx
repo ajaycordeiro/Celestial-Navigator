@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Sparkles, ArrowUp, Sunrise, Sunset } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { formatLocalTime } from '@/lib/utils/astronomy';
+import { formatLocalTime, getTzAbbr } from '@/lib/utils/astronomy';
 
 function getSpectralColor(type: string): string {
   const firstChar = type.charAt(0).toUpperCase();
@@ -23,7 +23,8 @@ function getSpectralColor(type: string): string {
 }
 
 export default function Stars() {
-  const { lat, lon } = useSkyLocation();
+  const { lat, lon, timezone } = useSkyLocation();
+  const tzLabel = getTzAbbr(timezone);
   const [aboveHorizonOnly, setAboveHorizonOnly] = useState(true);
   
   const { data: stars, isLoading } = useGetStars(
@@ -120,7 +121,8 @@ export default function Stars() {
                       <div>
                         <span className="text-muted-foreground block leading-none mb-0.5">Rises</span>
                         <span className="text-foreground">
-                          {star.isCircumpolar ? 'Always up' : star.riseTime ? formatLocalTime(star.riseTime) : 'Never rises'}
+                          {star.isCircumpolar ? 'Always up' : star.riseTime ? formatLocalTime(star.riseTime, timezone) : 'Never rises'}
+                          {!star.isCircumpolar && star.riseTime && tzLabel && <span className="text-[10px] text-muted-foreground ml-0.5">{tzLabel}</span>}
                         </span>
                       </div>
                     </div>
@@ -129,7 +131,8 @@ export default function Stars() {
                       <div>
                         <span className="text-muted-foreground block leading-none mb-0.5">Sets</span>
                         <span className="text-foreground">
-                          {star.isCircumpolar ? 'Never sets' : star.setTime ? formatLocalTime(star.setTime) : 'Never rises'}
+                          {star.isCircumpolar ? 'Never sets' : star.setTime ? formatLocalTime(star.setTime, timezone) : 'Never rises'}
+                          {!star.isCircumpolar && star.setTime && tzLabel && <span className="text-[10px] text-muted-foreground ml-0.5">{tzLabel}</span>}
                         </span>
                       </div>
                     </div>

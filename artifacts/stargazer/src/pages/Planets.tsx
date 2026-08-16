@@ -5,11 +5,12 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Orbit, Sunrise, Sunset, Compass, Navigation } from 'lucide-react';
-import { formatLocalTime, getCompassDirection, formatMagnitude } from '@/lib/utils/astronomy';
+import { formatLocalTime, getCompassDirection, formatMagnitude, getTzAbbr } from '@/lib/utils/astronomy';
 import { motion } from 'framer-motion';
 
 export default function Planets() {
-  const { lat, lon } = useSkyLocation();
+  const { lat, lon, timezone } = useSkyLocation();
+  const tzLabel = getTzAbbr(timezone);
   const { data: planets, isLoading } = useGetPlanets(
     { lat: lat!, lon: lon! },
     { query: { enabled: !!lat && !!lon, queryKey: getGetPlanetsQueryKey({ lat: lat!, lon: lon! }) } }
@@ -96,13 +97,13 @@ export default function Planets() {
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1 uppercase">
                       <Sunrise className="w-3 h-3" /> Rise
                     </div>
-                    <div className="font-mono">{formatLocalTime(planet.riseTime)}</div>
+                    <div className="font-mono">{formatLocalTime(planet.riseTime, timezone)} {tzLabel && <span className="text-xs text-muted-foreground">{tzLabel}</span>}</div>
                   </div>
                   <div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1 uppercase">
                       <Sunset className="w-3 h-3" /> Set
                     </div>
-                    <div className="font-mono">{formatLocalTime(planet.setTime)}</div>
+                    <div className="font-mono">{formatLocalTime(planet.setTime, timezone)} {tzLabel && <span className="text-xs text-muted-foreground">{tzLabel}</span>}</div>
                   </div>
                 </div>
 

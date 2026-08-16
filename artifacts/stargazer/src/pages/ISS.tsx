@@ -4,11 +4,12 @@ import { useGetISSPasses, getGetISSPassesQueryKey } from '@workspace/api-client-
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Satellite, MapPin, Navigation, Clock, Activity, Calendar } from 'lucide-react';
-import { formatLocalTime, formatLocalDate } from '@/lib/utils/astronomy';
+import { formatLocalTime, formatLocalDate, getTzAbbr } from '@/lib/utils/astronomy';
 import { motion } from 'framer-motion';
 
 export default function ISS() {
-  const { lat, lon } = useSkyLocation();
+  const { lat, lon, timezone } = useSkyLocation();
+  const tzLabel = getTzAbbr(timezone);
   
   const { data: issInfo, isLoading } = useGetISSPasses(
     { lat: lat!, lon: lon! },
@@ -67,7 +68,7 @@ export default function ISS() {
                   </div>
                   
                   <div className="pt-4 border-t border-border/50 text-xs font-mono text-primary animate-pulse">
-                    Last sync: {formatLocalTime(issInfo.currentLocation.timestamp)}
+                    Last sync: {formatLocalTime(issInfo.currentLocation.timestamp, timezone)} {tzLabel && <span className="text-primary/70">{tzLabel}</span>}
                   </div>
                 </div>
               </Card>
@@ -99,10 +100,10 @@ export default function ISS() {
                           
                           <div className="flex-1">
                             <div className="flex items-center gap-2 text-muted-foreground mb-1 font-mono text-sm">
-                              <Calendar className="w-4 h-4" /> {formatLocalDate(pass.riseTime)}
+                              <Calendar className="w-4 h-4" /> {formatLocalDate(pass.riseTime, timezone)} {tzLabel && <span className="text-xs text-muted-foreground">{tzLabel}</span>}
                             </div>
                             <div className="text-2xl font-bold font-mono text-foreground flex items-center gap-3">
-                              {formatLocalTime(pass.riseTime)}
+                              {formatLocalTime(pass.riseTime, timezone)} {tzLabel && <span className="text-sm font-normal font-sans text-muted-foreground">{tzLabel}</span>}
                               <span className="text-sm font-sans font-normal text-muted-foreground bg-background px-2 py-1 rounded">
                                 {Math.round(pass.duration / 60)} min {pass.duration % 60} sec
                               </span>
