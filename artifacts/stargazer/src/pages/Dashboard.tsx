@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useSkyLocation } from '@/contexts/LocationContext';
 import { LocationPicker } from '@/components/LocationPicker';
 import { useGetSkyOverview, getGetSkyOverviewQueryKey } from '@workspace/api-client-react';
@@ -10,16 +10,58 @@ import {
   Orbit,
   Sparkles,
   Compass,
-  Calendar,
   Satellite,
   CloudRainWind,
-  Sunrise,
   Sunset,
   ArrowRight,
-  MapPin
+  MapPin,
+  Clock
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
+
+/** Local Sidereal Time — which RA is currently on the observer's meridian */
+function calcLST(lon: number, date: Date): string {
+  const JD = date.getTime() / 86400000 + 2440587.5;
+  const T = (JD - 2451545.0) / 36525;
+  let GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + T * T * (0.000387933 - T / 38710000);
+  GMST = ((GMST % 360) + 360) % 360;
+  const LST = ((GMST + lon + 360) % 360) / 15; // degrees → hours
+  const h = Math.floor(LST);
+  const m = Math.floor((LST - h) * 60);
+  const s = Math.floor(((LST - h) * 60 - m) * 60);
+  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+}
+
+function ObservatoryClocks({ lon }: { lon: number }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const localTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const utcTime  = now.toUTCString().split(' ')[4]; // "HH:MM:SS"
+  const lst      = calcLST(lon, now);
+
+  return (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 text-xs font-mono text-muted-foreground bg-card/40 px-4 py-3 rounded-lg border border-border/50 backdrop-blur divide-y sm:divide-y-0 sm:divide-x divide-border/40 w-full sm:w-auto">
+      <div className="flex items-center gap-2 sm:pr-4">
+        <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        <span className="uppercase tracking-wider">Local</span>
+        <span className="text-foreground tabular-nums">{localTime}</span>
+      </div>
+      <div className="flex items-center gap-2 sm:px-4 pt-2 sm:pt-0">
+        <span className="uppercase tracking-wider">UTC</span>
+        <span className="text-secondary tabular-nums">{utcTime}</span>
+      </div>
+      <div className="flex items-center gap-2 sm:pl-4 pt-2 sm:pt-0">
+        <span className="uppercase tracking-wider">LST</span>
+        <span className="text-primary tabular-nums">{lst}</span>
+      </div>
+    </div>
+  );
+}
 
 const container = {
   hidden: { opacity: 0 },
@@ -76,10 +118,7 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground bg-card/40 px-4 py-2 rounded-lg border border-border/50 backdrop-blur">
-             <span>LOCAL TIME</span>
-             <span className="text-secondary">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          </div>
+          <ObservatoryClocks lon={lon} />
         </header>
 
         {changingLocation && (
@@ -175,7 +214,6 @@ export default function Dashboard() {
               <DashboardLink to="/moon" icon={Moon} label="Moon Phase" />
               <DashboardLink to="/stars" icon={Sparkles} label="Star Atlas" />
               <DashboardLink to="/deep-sky" icon={Compass} label="Deep Sky" />
-              <DashboardLink to="/events" icon={Calendar} label="Events" />
               <DashboardLink to="/iss" icon={Satellite} label="ISS Tracker" />
               <DashboardLink to="/weather" icon={CloudRainWind} label="Conditions" />
             </div>
