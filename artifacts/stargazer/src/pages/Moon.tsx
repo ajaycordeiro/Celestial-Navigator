@@ -8,74 +8,79 @@ import { formatLocalTime, getCompassDirection, formatLocalDate } from '@/lib/uti
 import { motion } from 'framer-motion';
 
 function MoonPhaseVisual({ phase }: { phase: number }) {
-  // Phase is 0 to 1
-  // 0 = new, 0.25 = first quarter, 0.5 = full, 0.75 = last quarter
-  
-  // We'll draw an SVG representing the moon.
-  // Using paths to draw the crescent/gibbous shapes.
-  const isWaxing = phase <= 0.5;
-  const mappedPhase = isWaxing ? phase * 2 : (phase - 0.5) * 2; // 0 to 1 for half cycle
-  
-  // Create the svg path for the terminator line
-  // If it's 0 (new) or 1 (full for waxing), it's a circle edge
-  const radius = 50;
-  const cx = 50;
-  const cy = 50;
-  
-  // A simple approximation for the moon phase shadow
-  // We use SVG masking to show the illuminated part
-  
+  // phase: 0=new moon, 0.25=first quarter, 0.5=full moon, 0.75=last quarter
+  const r = 47;
+  const cx = 50, cy = 50;
+
+  // Illuminated fraction (0–1) from the phase angle
+  const illum = (1 - Math.cos(phase * 2 * Math.PI)) / 2;
+
+  // The terminator is an ellipse whose horizontal semi-axis shrinks from r (new/full)
+  // to 0 (quarter) and whose side (left/right) indicates waxing vs waning.
+  const termRx = r * Math.abs(1 - 2 * illum); // r·|cos(2π·phase)|
+
+  const waxing = phase <= 0.5;
+  const top = `${cx} ${cy - r}`;
+  const bot = `${cx} ${cy + r}`;
+
+  // Build the lit-area path:
+  //   1. A semicircle arc along the bright edge (right for waxing, left for waning)
+  //   2. An ellipse arc back along the terminator
+  // Sweep flags (0=counterclockwise, 1=clockwise in SVG):
+  //   Waxing crescent (illum ≤ 0.5): main=CW(1), terminator=CCW(0) → right sliver
+  //   Waxing gibbous  (illum > 0.5): main=CW(1), terminator=CW(1)  → most of disk
+  //   Waning gibbous  (illum ≥ 0.5): main=CCW(0), terminator=CW(1) → most of disk
+  //   Waning crescent (illum < 0.5): main=CCW(0), terminator=CCW(0) → left sliver
+  let path: string;
+  if (waxing) {
+    const ts = illum > 0.5 ? 1 : 0;
+    path = `M ${top} A ${r} ${r} 0 0 1 ${bot} A ${termRx} ${r} 0 0 ${ts} ${top} Z`;
+  } else {
+    const ts = illum >= 0.5 ? 1 : 0;
+    path = `M ${top} A ${r} ${r} 0 0 0 ${bot} A ${termRx} ${r} 0 0 ${ts} ${top} Z`;
+  }
+
   return (
-    <div className="relative w-48 h-48 mx-auto md:w-64 md:h-64 drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-      <svg viewBox="0 0 100 100" className="w-full h-full rotate-[-15deg]">
+    <div className="relative w-48 h-48 mx-auto md:w-64 md:h-64">
+      <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_40px_rgba(180,210,255,0.15)]">
         <defs>
-          <filter id="moon-mask">
-            {/* The whole moon circle */}
-            <circle cx="50" cy="50" r="48" fill="white" />
-            
-            {/* The shadow part */}
-            {/* Simple trick: a black circle moving across to simulate phase.
-                Not perfectly accurate but gives a good visual vibe without complex math */}
-            {isWaxing ? (
-              // Waxing: shadow moves from right to left
-              <ellipse 
-                cx={50 + (1 - mappedPhase * 2) * 50} 
-                cy="50" 
-                rx={Math.abs(1 - mappedPhase * 2) * 48} 
-                ry="48" 
-                fill={mappedPhase < 0.5 ? "black" : "white"} 
-              />
-            ) : (
-              // Waning: shadow moves from left to right
-              <ellipse 
-                cx={50 - (1 - mappedPhase * 2) * 50} 
-                cy="50" 
-                rx={Math.abs(1 - mappedPhase * 2) * 48} 
-                ry="48" 
-                fill={mappedPhase < 0.5 ? "white" : "black"} 
-              />
-            )}
-            
-            {/* Base left/right shading to combine with the ellipse */}
-            {isWaxing ? (
-              <rect x="0" y="0" width={50} height="100" fill="black" />
-            ) : (
-              <rect x="50" y="0" width={50} height="100" fill="black" />
-            )}
-          </filter>
+          <clipPath id="lit-clip">
+            <path d={path} />
+          </clipPath>
+          <radialGradient id="disk-grad" cx="45%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="#1e2d45" />
+            <stop offset="100%" stopColor="#0a1220" />
+          </radialGradient>
+          <radialGradient id="lit-grad" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stopColor="#f0f4ff" />
+            <stop offset="100%" stopColor="#c8d8f0" />
+          </radialGradient>
         </defs>
-        
-        {/* Background (unilluminated part) */}
-        <circle cx="50" cy="50" r="48" className="fill-background stroke-border stroke-1" />
-        
-        {/* Illuminated part */}
-        <circle cx="50" cy="50" r="48" className="fill-slate-200" filter="url(#moon-mask)" />
-        
-        {/* Craters texture (very subtle overlay) */}
-        <circle cx="30" cy="30" r="8" className="fill-black/10" filter="url(#moon-mask)"/>
-        <circle cx="70" cy="40" r="12" className="fill-black/10" filter="url(#moon-mask)"/>
-        <circle cx="45" cy="70" r="10" className="fill-black/10" filter="url(#moon-mask)"/>
-        <circle cx="20" cy="60" r="5" className="fill-black/10" filter="url(#moon-mask)"/>
+
+        {/* Dark moon disk */}
+        <circle cx={cx} cy={cy} r={r} fill="url(#disk-grad)" />
+
+        {/* Unlit surface craters (always visible, subtly) */}
+        <circle cx="33" cy="34" r="9" fill="#12213a" opacity="0.7" />
+        <circle cx="64" cy="41" r="13" fill="#12213a" opacity="0.6" />
+        <circle cx="47" cy="69" r="10" fill="#12213a" opacity="0.6" />
+        <circle cx="22" cy="60" r="6"  fill="#12213a" opacity="0.7" />
+        <circle cx="58" cy="22" r="5"  fill="#12213a" opacity="0.5" />
+
+        {/* Illuminated region */}
+        <path d={path} fill="url(#lit-grad)" />
+
+        {/* Crater texture clipped to lit area */}
+        <g clipPath="url(#lit-clip)" opacity="0.18">
+          <circle cx="33" cy="34" r="9"  fill="#4a6080" />
+          <circle cx="64" cy="41" r="13" fill="#4a6080" />
+          <circle cx="47" cy="69" r="10" fill="#4a6080" />
+          <circle cx="22" cy="60" r="6"  fill="#4a6080" />
+          <circle cx="58" cy="22" r="5"  fill="#4a6080" />
+        </g>
+
+        {/* Soft limb edge */}
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(180,210,255,0.10)" strokeWidth="2" />
       </svg>
     </div>
   );
