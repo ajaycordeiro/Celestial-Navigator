@@ -86,16 +86,16 @@ const RAW = [
 // ─── Helpers ────────────────────────────────────────────────────────────────
 function era(year: number) {
   if (year < 1970) return 'Space Race';
-  if (year < 1992) return 'Cold War';
-  if (year < 2010) return 'Post-USSR';
+  if (year < 1992) return 'Space Age';
+  if (year < 2010) return 'Satellite Era';
   return 'NewSpace';
 }
 
 const ERA_COLORS: Record<string, string> = {
-  'Space Race': '#f59e0b',
-  'Cold War':   '#6366f1',
-  'Post-USSR':  '#22d3ee',
-  'NewSpace':   '#10b981',
+  'Space Race':   '#f59e0b',
+  'Space Age':    '#6366f1',
+  'Satellite Era':'#22d3ee',
+  'NewSpace':     '#10b981',
 };
 
 function fmt(n: number, decimals = 0) {
