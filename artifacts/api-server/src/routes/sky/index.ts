@@ -9,7 +9,6 @@ import {
   GetISSPassesQueryParams,
   GetSkyWeatherQueryParams,
   GetAnalemmaQueryParams,
-  GetMilkyWayQueryParams,
 } from "@workspace/api-zod";
 import {
   computeSkyOverview,
@@ -19,7 +18,6 @@ import {
   computeDeepSkyObjects,
   computeCelestialEvents,
   computeAnalemma,
-  computeMilkyWay,
 } from "./astronomy.js";
 
 const router: IRouter = Router();
@@ -293,18 +291,6 @@ router.get("/sky/analemma", async (req, res): Promise<void> => {
   const hourUTC = hour ?? 12;
   const targetYear = year ?? new Date().getFullYear();
   const result = computeAnalemma(lat, lon, hourUTC, targetYear);
-  res.json(result);
-});
-
-router.get("/sky/milkyway", async (req, res): Promise<void> => {
-  const parsed = GetMilkyWayQueryParams.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const { lat, lon, date } = parsed.data;
-  const d = date ? new Date(date) : new Date();
-  const result = computeMilkyWay(d, lat, lon);
   res.json(result);
 });
 

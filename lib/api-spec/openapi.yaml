@@ -287,34 +287,6 @@ paths:
         "400":
           description: Missing or invalid parameters
 
-  /sky/milkyway:
-    get:
-      operationId: getMilkyWay
-      tags: [sky]
-      summary: Milky Way galactic core visibility for a given location and night
-      parameters:
-        - name: lat
-          in: query
-          required: true
-          schema: { type: number }
-        - name: lon
-          in: query
-          required: true
-          schema: { type: number }
-        - name: date
-          in: query
-          required: false
-          schema: { type: string }
-      responses:
-        "200":
-          description: Milky Way galactic core data
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MilkyWayData"
-        "400":
-          description: Missing or invalid parameters
-
   /nasa/images:
     get:
       operationId: searchNasaImages
@@ -624,58 +596,6 @@ components:
           description: UTC hour used for computation (0-23)
         year:
           type: integer
-
-    MilkyWayCurvePoint:
-      type: object
-      required: [time, altitude, azimuth, isDark, isShootable]
-      properties:
-        time: { type: string }
-        altitude: { type: number }
-        azimuth: { type: number }
-        isDark: { type: boolean }
-        isShootable: { type: boolean }
-
-    MilkyWayForecastNight:
-      type: object
-      required: [date, peakAltitude, peakTime, coreVisible, isBestNight]
-      properties:
-        date: { type: string }
-        peakAltitude: { type: number }
-        peakTime: { type: ["string", "null"] }
-        coreVisible: { type: boolean }
-        isBestNight: { type: boolean }
-
-    MilkyWayData:
-      type: object
-      required: [currentAltitude, currentAzimuth, riseTime, peakTime, setTime, peakAltitude, peakAzimuth, riseAzimuth, setAzimuth, sunset, sunrise, astronomicalDusk, astronomicalDawn, shootableWindowStart, shootableWindowEnd, altitudeCurve, forecast, verdict, verdictReason, moonIllumination, coreVisibleTonight]
-      properties:
-        currentAltitude: { type: number }
-        currentAzimuth: { type: number }
-        riseTime: { type: ["string", "null"] }
-        peakTime: { type: ["string", "null"] }
-        setTime: { type: ["string", "null"] }
-        peakAltitude: { type: number }
-        peakAzimuth: { type: number }
-        riseAzimuth: { type: ["number", "null"] }
-        setAzimuth: { type: ["number", "null"] }
-        sunset: { type: ["string", "null"] }
-        sunrise: { type: ["string", "null"] }
-        astronomicalDusk: { type: ["string", "null"] }
-        astronomicalDawn: { type: ["string", "null"] }
-        shootableWindowStart: { type: ["string", "null"] }
-        shootableWindowEnd: { type: ["string", "null"] }
-        altitudeCurve:
-          type: array
-          items: { $ref: "#/components/schemas/MilkyWayCurvePoint" }
-        forecast:
-          type: array
-          items: { $ref: "#/components/schemas/MilkyWayForecastNight" }
-        verdict:
-          type: string
-          enum: [Good, Moderate, Poor]
-        verdictReason: { type: string }
-        moonIllumination: { type: number }
-        coreVisibleTonight: { type: boolean }
 
     NasaImage:
       type: object
