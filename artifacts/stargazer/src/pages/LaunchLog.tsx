@@ -231,7 +231,7 @@ export default function LaunchLog() {
           <Rocket className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold font-mono tracking-tight">Launch Log</h1>
+          <h1 className="text-2xl font-bold font-mono tracking-tight">Global Space Missions</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             70 years of human spaceflight — 1957 to 2026 — across {fmt(totals.launches)} launches from 13 spacefaring nations.
           </p>

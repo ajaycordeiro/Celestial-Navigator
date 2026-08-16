@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { path: '/iss', label: 'ISS Tracker', icon: Satellite },
   { path: '/weather', label: 'Conditions', icon: CloudRainWind },
   { path: '/analemma', label: 'Analemma', icon: Sun },
-  { path: '/launch-log', label: 'Launch Log', icon: Rocket },
+  { path: '/launch-log', label: 'Space Missions', icon: Rocket },
 ];
 
 export function Shell({ children }: { children: ReactNode }) {
