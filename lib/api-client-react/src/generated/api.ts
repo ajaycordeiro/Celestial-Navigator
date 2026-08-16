@@ -859,6 +859,49 @@ export function useGetAnalemma<TData = Awaited<ReturnType<typeof getAnalemma>>, 
 
 
 
+export const getGetMilkyWayUrl = (params: GetMilkyWayParams) => {
+  const normalizedParams = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) normalizedParams.append(key, value === null ? 'null' : String(value));
+  });
+  const stringifiedParams = normalizedParams.toString();
+  return stringifiedParams.length > 0 ? `/api/sky/milkyway?${stringifiedParams}` : `/api/sky/milkyway`;
+};
+
+export const getMilkyWay = async (params: GetMilkyWayParams, options?: Parameters<typeof customFetch>[1]): Promise<MilkyWayData> => {
+  return customFetch<MilkyWayData>(getGetMilkyWayUrl(params), { ...options, method: 'GET' });
+};
+
+export const getGetMilkyWayQueryKey = (params?: GetMilkyWayParams) => {
+  return [`/api/sky/milkyway`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetMilkyWayQueryOptions = <TData = Awaited<ReturnType<typeof getMilkyWay>>, TError = ErrorType<void>>(
+  params: GetMilkyWayParams,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getMilkyWay>>, TError, TData>; request?: SecondParameter<typeof customFetch> }
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+  const queryKey = queryOptions?.queryKey ?? getGetMilkyWayQueryKey(params);
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMilkyWay>>> = ({ signal }) => getMilkyWay(params, { signal, ...requestOptions });
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<Awaited<ReturnType<typeof getMilkyWay>>, TError, TData> & { queryKey: QueryKey };
+};
+
+export type GetMilkyWayQueryResult = NonNullable<Awaited<ReturnType<typeof getMilkyWay>>>;
+export type GetMilkyWayQueryError = ErrorType<void>;
+
+/**
+ * @summary Milky Way galactic core visibility for a given location and night
+ */
+export function useGetMilkyWay<TData = Awaited<ReturnType<typeof getMilkyWay>>, TError = ErrorType<void>>(
+  params: GetMilkyWayParams,
+  options?: { query?: UseQueryOptions<Awaited<ReturnType<typeof getMilkyWay>>, TError, TData>; request?: SecondParameter<typeof customFetch> }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMilkyWayQueryOptions(params, options);
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
 export const getSearchNasaImagesUrl = (params: SearchNasaImagesParams,) => {
   const normalizedParams = new URLSearchParams();
 

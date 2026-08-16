@@ -239,6 +239,56 @@ export const GetAnalemmaResponse = zod.object({
 
 
 /**
+ * @summary Milky Way galactic core visibility for a given location and night
+ */
+export const GetMilkyWayQueryParams = zod.object({
+  "lat": zod.coerce.number(),
+  "lon": zod.coerce.number(),
+  "date": zod.coerce.string().optional(),
+})
+
+export const GetMilkyWayCurvePoint = zod.object({
+  "time": zod.string(),
+  "altitude": zod.number(),
+  "azimuth": zod.number(),
+  "isDark": zod.boolean(),
+  "isShootable": zod.boolean(),
+})
+
+export const GetMilkyWayForecastNight = zod.object({
+  "date": zod.string(),
+  "peakAltitude": zod.number(),
+  "peakTime": zod.string().nullable(),
+  "coreVisible": zod.boolean(),
+  "isBestNight": zod.boolean(),
+})
+
+export const GetMilkyWayResponse = zod.object({
+  "currentAltitude": zod.number(),
+  "currentAzimuth": zod.number(),
+  "riseTime": zod.string().nullable(),
+  "peakTime": zod.string().nullable(),
+  "setTime": zod.string().nullable(),
+  "peakAltitude": zod.number(),
+  "peakAzimuth": zod.number(),
+  "riseAzimuth": zod.number().nullable(),
+  "setAzimuth": zod.number().nullable(),
+  "sunset": zod.string().nullable(),
+  "sunrise": zod.string().nullable(),
+  "astronomicalDusk": zod.string().nullable(),
+  "astronomicalDawn": zod.string().nullable(),
+  "shootableWindowStart": zod.string().nullable(),
+  "shootableWindowEnd": zod.string().nullable(),
+  "altitudeCurve": zod.array(GetMilkyWayCurvePoint),
+  "forecast": zod.array(GetMilkyWayForecastNight),
+  "verdict": zod.enum(["Good", "Moderate", "Poor"]),
+  "verdictReason": zod.string(),
+  "moonIllumination": zod.number(),
+  "coreVisibleTonight": zod.boolean(),
+})
+
+
+/**
  * @summary Search NASA image library for a celestial object
  */
 export const SearchNasaImagesQueryParams = zod.object({

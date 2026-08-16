@@ -237,6 +237,52 @@ hour?: number;
 year?: number;
 };
 
+export interface MilkyWayCurvePoint {
+  time: string;
+  altitude: number;
+  azimuth: number;
+  isDark: boolean;
+  isShootable: boolean;
+}
+
+export interface MilkyWayForecastNight {
+  date: string;
+  peakAltitude: number;
+  peakTime: string | null;
+  coreVisible: boolean;
+  isBestNight: boolean;
+}
+
+export interface MilkyWayData {
+  currentAltitude: number;
+  currentAzimuth: number;
+  riseTime: string | null;
+  peakTime: string | null;
+  setTime: string | null;
+  peakAltitude: number;
+  peakAzimuth: number;
+  riseAzimuth: number | null;
+  setAzimuth: number | null;
+  sunset: string | null;
+  sunrise: string | null;
+  astronomicalDusk: string | null;
+  astronomicalDawn: string | null;
+  shootableWindowStart: string | null;
+  shootableWindowEnd: string | null;
+  altitudeCurve: MilkyWayCurvePoint[];
+  forecast: MilkyWayForecastNight[];
+  verdict: 'Good' | 'Moderate' | 'Poor';
+  verdictReason: string;
+  moonIllumination: number;
+  coreVisibleTonight: boolean;
+}
+
+export type GetMilkyWayParams = {
+  lat: number;
+  lon: number;
+  date?: string;
+};
+
 export type SearchNasaImagesParams = {
 q: string;
 count?: number;

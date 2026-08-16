@@ -833,6 +833,194 @@ export interface AnalemmaResult {
   year: number;
 }
 
+// ── Milky Way / Galactic Core ─────────────────────────────────────────────────
+
+/** Galactic center (Sagittarius A*): RA 17 h 45 m 40 s, Dec −29° 00′ 28″ */
+const GALACTIC_CENTER = { ra: 17.7611, dec: -29.0078 };
+
+function getSunAlt(date: Date, observer: Astronomy.Observer): number {
+  const eq = Astronomy.Equator(Astronomy.Body.Sun, date, observer, true, true);
+  return Astronomy.Horizon(date, observer, eq.ra, eq.dec, 'normal').altitude;
+}
+
+export interface MilkyWayCurvePoint {
+  time: string;
+  altitude: number;
+  azimuth: number;
+  isDark: boolean;
+  isShootable: boolean;
+}
+
+export interface MilkyWayForecastNight {
+  date: string;
+  peakAltitude: number;
+  peakTime: string | null;
+  coreVisible: boolean;
+  isBestNight: boolean;
+}
+
+export interface MilkyWayData {
+  currentAltitude: number;
+  currentAzimuth: number;
+  riseTime: string | null;
+  peakTime: string | null;
+  setTime: string | null;
+  peakAltitude: number;
+  peakAzimuth: number;
+  riseAzimuth: number | null;
+  setAzimuth: number | null;
+  sunset: string | null;
+  sunrise: string | null;
+  astronomicalDusk: string | null;
+  astronomicalDawn: string | null;
+  shootableWindowStart: string | null;
+  shootableWindowEnd: string | null;
+  altitudeCurve: MilkyWayCurvePoint[];
+  forecast: MilkyWayForecastNight[];
+  verdict: 'Good' | 'Moderate' | 'Poor';
+  verdictReason: string;
+  moonIllumination: number;
+  coreVisibleTonight: boolean;
+}
+
+export function computeMilkyWay(date: Date, lat: number, lon: number): MilkyWayData {
+  const observer = makeObserver(lat, lon);
+  const gc = GALACTIC_CENTER;
+
+  // Current position of galactic core
+  const curHz = Astronomy.Horizon(date, observer, gc.ra, gc.dec, 'normal');
+  const currentAltitude = Math.round(curHz.altitude * 10) / 10;
+  const currentAzimuth  = Math.round(curHz.azimuth  * 10) / 10;
+
+  // Rise/set for the galactic core (sidereal time method)
+  const { rise: coreRise, set: coreSet } = getStarRiseSet(gc, date, lat, lon);
+
+  // Horizon rise/set azimuth from the geometric formula
+  const decRad = gc.dec * Math.PI / 180;
+  const latRad = lat  * Math.PI / 180;
+  const cosRiseAz = Math.sin(decRad) / Math.cos(latRad);
+  const riseAzimuth = coreRise && Math.abs(cosRiseAz) <= 1
+    ? Math.round(Math.acos(cosRiseAz) * 1800 / Math.PI) / 10
+    : null;
+  const setAzimuth = riseAzimuth !== null
+    ? Math.round((360 - riseAzimuth) * 10) / 10
+    : null;
+
+  // Sun rise/set anchored at UTC midnight
+  const midnight   = new Date(date); midnight.setUTCHours(0, 0, 0, 0);
+  const noonBefore = new Date(midnight.getTime() - 12 * 3_600_000);
+
+  const sunsetAstro  = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, noonBefore, 1);
+  const sunriseAstro = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, midnight,   1);
+  const sunset  = sunsetAstro  ? new Date(sunsetAstro.date)  : null;
+  const sunrise = sunriseAstro ? new Date(sunriseAstro.date) : null;
+
+  // Altitude curve: 30-min samples from 1 h before sunset to 1 h after sunrise
+  const curveStart = sunset  ? new Date(sunset.getTime()  - 3_600_000) : new Date(midnight.getTime() - 6 * 3_600_000);
+  const curveEnd   = sunrise ? new Date(sunrise.getTime() + 3_600_000) : new Date(midnight.getTime() + 6 * 3_600_000);
+
+  const altitudeCurve: MilkyWayCurvePoint[] = [];
+  for (let t = new Date(curveStart); t <= curveEnd; t = new Date(t.getTime() + 30 * 60_000)) {
+    const hz     = Astronomy.Horizon(t, observer, gc.ra, gc.dec, 'normal');
+    const sunAlt = getSunAlt(t, observer);
+    const alt    = Math.round(hz.altitude * 10) / 10;
+    const az     = Math.round(hz.azimuth  * 10) / 10;
+    const isDark = sunAlt < -18;
+    altitudeCurve.push({ time: t.toISOString(), altitude: alt, azimuth: az, isDark, isShootable: isDark && alt > 10 });
+  }
+
+  // Infer astronomical twilight from the curve (first/last dark point)
+  const firstDark = altitudeCurve.find(p => p.isDark);
+  const lastDark  = [...altitudeCurve].reverse().find(p => p.isDark);
+  const astronomicalDusk = firstDark?.time ?? null;
+  const astronomicalDawn = lastDark?.time  ?? null;
+
+  // Peak (max altitude over the whole night window)
+  let peakPoint: MilkyWayCurvePoint | null = null;
+  for (const pt of altitudeCurve) {
+    if (!peakPoint || pt.altitude > peakPoint.altitude) peakPoint = pt;
+  }
+
+  // Shootable window
+  const shootable = altitudeCurve.filter(p => p.isShootable);
+  const coreVisibleTonight = shootable.length > 0;
+
+  // Moon illumination
+  const moonIllumination = Math.round(
+    Astronomy.Illumination(Astronomy.Body.Moon, date).phase_fraction * 100
+  );
+
+  // 7-night forecast (hourly samples per night)
+  const forecast: MilkyWayForecastNight[] = [];
+  let bestNightIdx = 0;
+  let bestPeakAlt  = -Infinity;
+
+  for (let d = 0; d < 7; d++) {
+    const nightMidnight = new Date(midnight.getTime() + d * 86_400_000);
+    const nightNoon     = new Date(nightMidnight.getTime() - 12 * 3_600_000);
+    const nSunset  = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, nightNoon,     1);
+    const nSunrise = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, nightMidnight, 1);
+    const nStart = nSunset  ? new Date(nSunset.date)  : nightMidnight;
+    const nEnd   = nSunrise ? new Date(nSunrise.date) : new Date(nightMidnight.getTime() + 8 * 3_600_000);
+
+    let nightPeak: { alt: number; time: Date } | null = null;
+    let visible = false;
+    for (let nt = new Date(nStart); nt <= nEnd; nt = new Date(nt.getTime() + 60 * 60_000)) {
+      const hz     = Astronomy.Horizon(nt, observer, gc.ra, gc.dec, 'normal');
+      const sunAlt = getSunAlt(nt, observer);
+      if (sunAlt < -18 && hz.altitude > 10) {
+        visible = true;
+        if (!nightPeak || hz.altitude > nightPeak.alt) nightPeak = { alt: hz.altitude, time: new Date(nt) };
+      }
+    }
+    if (visible && nightPeak && nightPeak.alt > bestPeakAlt) {
+      bestPeakAlt  = nightPeak.alt;
+      bestNightIdx = d;
+    }
+    forecast.push({
+      date:         nightMidnight.toISOString().split('T')[0],
+      peakAltitude: nightPeak ? Math.round(nightPeak.alt * 10) / 10 : 0,
+      peakTime:     nightPeak ? nightPeak.time.toISOString() : null,
+      coreVisible:  visible,
+      isBestNight:  false,
+    });
+  }
+  if (forecast[bestNightIdx]) forecast[bestNightIdx].isBestNight = true;
+
+  // Overall verdict (altitude-based; cloud cover combined in frontend)
+  const peakAlt = peakPoint?.altitude ?? 0;
+  const verdict: 'Good' | 'Moderate' | 'Poor' =
+    !coreVisibleTonight ? 'Poor'
+    : peakAlt >= 25     ? 'Good'
+    : 'Moderate';
+
+  const verdictReason = !coreVisibleTonight
+    ? 'Galactic core stays below 10° or daylight all night from this location'
+    : moonIllumination > 50
+    ? `Core peaks at ${peakAlt}° but ${moonIllumination}% moon may wash out faint detail`
+    : peakAlt >= 25
+    ? `Core peaks at ${peakAlt}° — excellent shooting altitude`
+    : `Core peaks at ${peakAlt}° — low but shootable`;
+
+  return {
+    currentAltitude, currentAzimuth,
+    riseTime:  coreRise?.toISOString() ?? null,
+    peakTime:  peakPoint?.time ?? null,
+    setTime:   coreSet?.toISOString()  ?? null,
+    peakAltitude: peakAlt,
+    peakAzimuth:  peakPoint?.azimuth ?? 0,
+    riseAzimuth, setAzimuth,
+    sunset:           sunset?.toISOString()           ?? null,
+    sunrise:          sunrise?.toISOString()          ?? null,
+    astronomicalDusk, astronomicalDawn,
+    shootableWindowStart: coreVisibleTonight ? shootable[0].time                      : null,
+    shootableWindowEnd:   coreVisibleTonight ? shootable[shootable.length - 1].time   : null,
+    altitudeCurve, forecast,
+    verdict, verdictReason,
+    moonIllumination, coreVisibleTonight,
+  };
+}
+
 export function computeAnalemma(
   lat: number,
   lon: number,
