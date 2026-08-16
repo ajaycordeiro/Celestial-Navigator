@@ -16,6 +16,7 @@ import {
   ArrowRight,
   MapPin,
   Sun,
+  Map as MapIcon,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
@@ -167,9 +168,10 @@ export default function Dashboard() {
 
             {/* Quick Access Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <DashboardLink to="/skymap" icon={MapIcon} label="Sky Map" />
               <DashboardLink to="/planets" icon={Orbit} label="Planets" />
               <DashboardLink to="/moon" icon={Moon} label="Moon Phase" />
-              <DashboardLink to="/stars" icon={Sparkles} label="Star Atlas" />
+              <DashboardLink to="/stars" icon={Sparkles} label="Stars" />
               <DashboardLink to="/deep-sky" icon={Compass} label="Deep Sky" />
               <DashboardLink to="/iss" icon={Satellite} label="ISS Tracker" />
               <DashboardLink to="/weather" icon={CloudRainWind} label="Conditions" />
