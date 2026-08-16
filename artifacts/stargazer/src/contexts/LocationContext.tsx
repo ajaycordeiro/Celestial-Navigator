@@ -18,29 +18,13 @@ interface LocationContextType extends SkyLocation {
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
 export function LocationProvider({ children }: { children: ReactNode }) {
-  const [location, setLocationState] = useState<SkyLocation>(() => {
-    try {
-      const stored = localStorage.getItem('stargazer-location');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Backfill timezone for old stored locations that predate this field
-        if (parsed.lat && parsed.lon && !parsed.timezone) {
-          try { parsed.timezone = tzlookup(parsed.lat, parsed.lon); } catch { parsed.timezone = ''; }
-        }
-        return parsed;
-      }
-    } catch (e) {
-      console.error('Failed to parse location from localStorage', e);
-    }
-    return { lat: null, lon: null, locationName: '', timezone: '' };
-  });
+  const [location, setLocationState] = useState<SkyLocation>(
+    { lat: null, lon: null, locationName: '', timezone: '' }
+  );
 
   const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    localStorage.setItem('stargazer-location', JSON.stringify(location));
-  }, [location]);
 
   const setLocation = (lat: number, lon: number, name: string = 'Custom Location') => {
     let timezone = '';
