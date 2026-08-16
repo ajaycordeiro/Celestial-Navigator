@@ -17,6 +17,7 @@ A full-featured astronomy web app for planning and enjoying nights under the sta
 | **ISS Tracker** | Next passes over your location with max elevation and pass duration |
 | **Conditions** | Cloud cover, seeing index, transparency, wind, humidity, and an overall sky-quality verdict |
 | **Analemma** | Sun's figure-8 path across the sky at a chosen hour, with a layman explainer |
+| **Global Space Missions** | 70-year dataset visualisation — launches per year, success rates, booster recoveries, human spaceflight, and annual spend from 1957 to 2026 |
 
 ---
 
