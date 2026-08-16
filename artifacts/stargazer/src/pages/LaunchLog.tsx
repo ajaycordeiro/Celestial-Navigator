@@ -283,7 +283,7 @@ export default function LaunchLog() {
                 <YAxis tick={yAxisStyle} width={32} />
                 <Tooltip content={<LaunchesTooltip />} />
                 <ReferenceLine x={1969} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: 'Apollo 11', fill: '#f59e0b', fontSize: 9 }} />
-                <ReferenceLine x={1991} stroke="#6366f1" strokeDasharray="4 4" label={{ value: 'USSR end', fill: '#6366f1', fontSize: 9 }} />
+                <ReferenceLine x={1991} stroke="#6366f1" strokeDasharray="4 4" label={{ value: 'Space Age end', fill: '#6366f1', fontSize: 9 }} />
                 <ReferenceLine x={2015} stroke="#10b981" strokeDasharray="4 4" label={{ value: 'NewSpace', fill: '#10b981', fontSize: 9 }} />
                 <Area type="monotone" dataKey="Successful" stroke="#10b981" strokeWidth={1.5} fill="url(#gradSuccess)" />
                 <Area type="monotone" dataKey="Failed" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradFailed)" />
@@ -398,7 +398,7 @@ export default function LaunchLog() {
                 <XAxis dataKey="year" ticks={[1957,1970,1985,2000,2010,2020,2026]} tick={xAxisStyle} />
                 <YAxis tick={yAxisStyle} width={40} tickFormatter={v => `$${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`} />
                 <Tooltip content={<CostTooltip />} />
-                <ReferenceLine x={1991} stroke="#6366f1" strokeDasharray="4 4" label={{ value: 'Cold War end', fill: '#6366f1', fontSize: 9 }} />
+                <ReferenceLine x={1991} stroke="#6366f1" strokeDasharray="4 4" label={{ value: 'Space Age end', fill: '#6366f1', fontSize: 9 }} />
                 <Area type="monotone" dataKey="Total Cost ($M)" stroke="#f59e0b" strokeWidth={2} fill="url(#gradCost)" />
               </AreaChart>
             </ResponsiveContainer>
