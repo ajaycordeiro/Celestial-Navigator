@@ -7,7 +7,9 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { cn } from '@/lib/utils';
 
 // ─── Dataset ────────────────────────────────────────────────────────────────
 const RAW = [
@@ -83,31 +85,32 @@ const RAW = [
   { year:2026,total_launches:197,successful:194,launch_failures:2,human_missions:24,total_crew_launched:79,booster_recoveries:37,avg_payload_kg:2423.01,total_cost_million_usd:25341.6,unique_rockets:43,success_rate_pct:98.5 },
 ];
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-function era(year: number) {
-  if (year < 1970) return 'Space Race';
-  if (year < 1992) return 'Space Age';
-  if (year < 2010) return 'Satellite Era';
-  return 'NewSpace';
-}
+const MIN_YEAR = 1957;
+const MAX_YEAR = 2026;
 
-const ERA_COLORS: Record<string, string> = {
-  'Space Race':   '#f59e0b',
-  'Space Age':    '#6366f1',
-  'Satellite Era':'#22d3ee',
-  'NewSpace':     '#10b981',
-};
+// ─── Era presets ─────────────────────────────────────────────────────────────
+const ERAS = [
+  { label: 'Space Race',   range: [1957, 1969] as [number,number], color: '#f59e0b' },
+  { label: 'Space Age',    range: [1970, 1991] as [number,number], color: '#6366f1' },
+  { label: 'Satellite Era',range: [1992, 2009] as [number,number], color: '#22d3ee' },
+  { label: 'NewSpace',     range: [2010, 2026] as [number,number], color: '#10b981' },
+];
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function fmt(n: number, decimals = 0) {
   return n.toLocaleString('en-US', { maximumFractionDigits: decimals });
 }
 
-// ─── Custom tooltip wrappers ─────────────────────────────────────────────────
+function activeEra(range: [number, number]) {
+  return ERAS.find(e => e.range[0] === range[0] && e.range[1] === range[1]) ?? null;
+}
+
+// ─── Tooltips ────────────────────────────────────────────────────────────────
 function LaunchesTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-background border border-border rounded-lg px-3 py-2 text-xs shadow-xl space-y-1">
-      <p className="font-semibold text-foreground font-mono">{label}</p>
+      <p className="font-semibold font-mono">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>
           {p.name}: <span className="font-mono font-bold">{fmt(p.value)}</span>
@@ -121,7 +124,7 @@ function PercentTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-background border border-border rounded-lg px-3 py-2 text-xs shadow-xl space-y-1">
-      <p className="font-semibold text-foreground font-mono">{label}</p>
+      <p className="font-semibold font-mono">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>
           {p.name}: <span className="font-mono font-bold">{Number(p.value).toFixed(1)}%</span>
@@ -135,7 +138,7 @@ function CostTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-background border border-border rounded-lg px-3 py-2 text-xs shadow-xl space-y-1">
-      <p className="font-semibold text-foreground font-mono">{label}</p>
+      <p className="font-semibold font-mono">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }}>
           {p.name}: <span className="font-mono font-bold">${fmt(p.value)}M</span>
@@ -165,58 +168,59 @@ function StatCard({ icon: Icon, label, value, sub, color }: {
   );
 }
 
-// ─── Page ────────────────────────────────────────────────────────────────────
+// ─── Chart shared styles ──────────────────────────────────────────────────────
+const xAxisStyle = { fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontFamily: 'monospace' };
+const yAxisStyle = { fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontFamily: 'monospace' };
+const gridStyle  = { stroke: 'hsl(var(--border))', strokeDasharray: '3 3', strokeOpacity: 0.5 };
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LaunchLog() {
-  const [eraTick] = useState<string[]>(['1957','1965','1970','1975','1980','1985','1990','1995','2000','2005','2010','2015','2020','2026']);
+  const [yearRange, setYearRange] = useState<[number, number]>([MIN_YEAR, MAX_YEAR]);
 
-  const totals = useMemo(() => ({
-    launches: RAW.reduce((s, r) => s + r.total_launches, 0),
-    humans: RAW.reduce((s, r) => s + r.total_crew_launched, 0),
-    recoveries: RAW.reduce((s, r) => s + r.booster_recoveries, 0),
-    cost: RAW.reduce((s, r) => s + r.total_cost_million_usd, 0),
-    peakYear: RAW.reduce((a, b) => b.total_launches > a.total_launches ? b : a).year,
-    peakLaunches: RAW.reduce((a, b) => b.total_launches > a.total_launches ? b : a).total_launches,
-  }), []);
+  const current = activeEra(yearRange);
 
-  // Chart A: stacked area — successful vs failed
-  const launchData = useMemo(() =>
-    RAW.map(r => ({
-      year: r.year,
-      Successful: r.successful,
-      Failed: r.launch_failures,
-      era: era(r.year),
-    })), []);
+  function applyEra(range: [number, number]) {
+    // clicking the already-active era resets to all years
+    if (current?.range[0] === range[0] && current?.range[1] === range[1]) {
+      setYearRange([MIN_YEAR, MAX_YEAR]);
+    } else {
+      setYearRange(range);
+    }
+  }
 
-  // Chart B: success rate line
-  const rateData = useMemo(() =>
-    RAW.map(r => ({ year: r.year, 'Success Rate': r.success_rate_pct })), []);
+  // ── Filtered data ──────────────────────────────────────────────────────────
+  const filtered = useMemo(
+    () => RAW.filter(r => r.year >= yearRange[0] && r.year <= yearRange[1]),
+    [yearRange],
+  );
 
-  // Chart C: booster recoveries (2015+)
-  const recoveryData = useMemo(() =>
-    RAW.filter(r => r.year >= 2013).map(r => ({
-      year: r.year,
-      Launches: r.total_launches,
-      Recovered: r.booster_recoveries,
-    })), []);
+  // ── Stat totals from filtered rows ─────────────────────────────────────────
+  const totals = useMemo(() => {
+    const total  = filtered.reduce((s, r) => s + r.total_launches, 0);
+    const humans = filtered.reduce((s, r) => s + r.total_crew_launched, 0);
+    const recov  = filtered.reduce((s, r) => s + r.booster_recoveries, 0);
+    const cost   = filtered.reduce((s, r) => s + r.total_cost_million_usd, 0);
+    const avgRate= filtered.length
+      ? filtered.reduce((s, r) => s + r.success_rate_pct, 0) / filtered.length
+      : 0;
+    const peak   = filtered.reduce((a, b) => b.total_launches > a.total_launches ? b : a, filtered[0] ?? RAW[0]);
+    return { total, humans, recov, cost, avgRate, peak };
+  }, [filtered]);
 
-  // Chart D: human spaceflight
-  const humanData = useMemo(() =>
-    RAW.filter(r => r.human_missions > 0).map(r => ({
-      year: r.year,
-      'Human Missions': r.human_missions,
-      'Crew Members': r.total_crew_launched,
-    })), []);
+  // ── Chart datasets from filtered rows ──────────────────────────────────────
+  const launchData  = useMemo(() => filtered.map(r => ({ year: r.year, Successful: r.successful, Failed: r.launch_failures })), [filtered]);
+  const rateData    = useMemo(() => filtered.map(r => ({ year: r.year, 'Success Rate': r.success_rate_pct })), [filtered]);
+  const recovData   = useMemo(() => filtered.filter(r => r.year >= 2013).map(r => ({ year: r.year, Launches: r.total_launches, Recovered: r.booster_recoveries })), [filtered]);
+  const humanData   = useMemo(() => filtered.filter(r => r.human_missions > 0).map(r => ({ year: r.year, 'Human Missions': r.human_missions, 'Crew Members': r.total_crew_launched })), [filtered]);
+  const costData    = useMemo(() => filtered.map(r => ({ year: r.year, 'Total Cost ($M)': Math.round(r.total_cost_million_usd) })), [filtered]);
 
-  // Chart E: total cost over time
-  const costData = useMemo(() =>
-    RAW.map(r => ({
-      year: r.year,
-      'Total Cost ($M)': Math.round(r.total_cost_million_usd),
-    })), []);
+  // Reference lines — only show if that year is in filtered range
+  function refLine(year: number, label: string, color: string) {
+    if (year < yearRange[0] || year > yearRange[1]) return null;
+    return <ReferenceLine x={year} stroke={color} strokeDasharray="4 4" label={{ value: label, fill: color, fontSize: 9 }} />;
+  }
 
-  const xAxisStyle = { fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontFamily: 'monospace' };
-  const yAxisStyle = { fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontFamily: 'monospace' };
-  const gridStyle = { stroke: 'hsl(var(--border))', strokeDasharray: '3 3', strokeOpacity: 0.5 };
+  const isAllYears = yearRange[0] === MIN_YEAR && yearRange[1] === MAX_YEAR;
 
   return (
     <motion.div
@@ -233,36 +237,96 @@ export default function LaunchLog() {
         <div>
           <h1 className="text-2xl font-bold font-mono tracking-tight">Global Space Missions</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            70 years of human spaceflight — 1957 to 2026 — across {fmt(totals.launches)} launches from 13 spacefaring nations.
+            70 years of human spaceflight — 1957 to 2026 — across {fmt(RAW.reduce((s,r)=>s+r.total_launches,0))} launches from 13 spacefaring nations.
           </p>
         </div>
       </div>
 
-      {/* Era badges */}
-      <div className="flex flex-wrap gap-2">
-        {Object.entries(ERA_COLORS).map(([name, color]) => (
-          <Badge key={name} variant="outline" className="font-mono text-xs" style={{ borderColor: color, color }}>
-            {name}
-          </Badge>
-        ))}
-      </div>
+      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
+      <Card className="bg-card/60 border-border/50">
+        <CardContent className="p-4 space-y-4">
+          {/* Era preset buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground font-mono mr-1">Era:</span>
+            {ERAS.map(era => {
+              const isActive = current?.label === era.label;
+              return (
+                <Button
+                  key={era.label}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => applyEra(era.range)}
+                  className={cn(
+                    'h-7 px-3 text-xs font-mono transition-all',
+                    isActive
+                      ? 'border-2 font-semibold'
+                      : 'opacity-60 hover:opacity-100',
+                  )}
+                  style={isActive ? { borderColor: era.color, color: era.color } : {}}
+                >
+                  {era.label}
+                </Button>
+              );
+            })}
+            {!isAllYears && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setYearRange([MIN_YEAR, MAX_YEAR])}
+                className="h-7 px-3 text-xs font-mono text-muted-foreground hover:text-foreground"
+              >
+                Reset
+              </Button>
+            )}
+          </div>
 
-      {/* Stat cards */}
+          {/* Year range slider */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-mono">Year range:</span>
+              <span className="text-xs font-mono font-semibold text-primary">
+                {yearRange[0]} – {yearRange[1]}
+                <span className="text-muted-foreground font-normal ml-1">
+                  ({yearRange[1] - yearRange[0] + 1} years)
+                </span>
+              </span>
+            </div>
+            <Slider
+              min={MIN_YEAR}
+              max={MAX_YEAR}
+              step={1}
+              value={yearRange}
+              onValueChange={v => setYearRange(v as [number, number])}
+              className="py-1"
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+              <span>{MIN_YEAR}</span>
+              <span>1970</span>
+              <span>1985</span>
+              <span>2000</span>
+              <span>2015</span>
+              <span>{MAX_YEAR}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Stat cards (update with filtered data) ─────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard icon={Rocket} label="Total Launches" value={fmt(totals.launches)} sub={`Peak: ${totals.peakYear} (${totals.peakLaunches})`} color="bg-primary/10 text-primary" />
-        <StatCard icon={Users} label="Humans to Space" value={fmt(totals.humans)} sub="across all missions" color="bg-cyan-500/10 text-cyan-400" />
-        <StatCard icon={RefreshCw} label="Boosters Recovered" value={fmt(totals.recoveries)} sub="since 2015" color="bg-emerald-500/10 text-emerald-400" />
-        <StatCard icon={DollarSign} label="Total Spend" value={`$${fmt(Math.round(totals.cost / 1000))}B`} sub="estimated, all years" color="bg-amber-500/10 text-amber-400" />
-        <StatCard icon={Zap} label="Avg Success Rate" value={`${(RAW.reduce((s,r)=>s+r.success_rate_pct,0)/RAW.length).toFixed(1)}%`} sub="across 70 years" color="bg-violet-500/10 text-violet-400" />
+        <StatCard icon={Rocket}      label="Total Launches"   value={fmt(totals.total)}   sub={totals.peak ? `Peak: ${totals.peak.year} (${totals.peak.total_launches})` : '—'} color="bg-primary/10 text-primary" />
+        <StatCard icon={Users}       label="Humans to Space"  value={fmt(totals.humans)}  sub="across filtered range"   color="bg-cyan-500/10 text-cyan-400" />
+        <StatCard icon={RefreshCw}   label="Boosters Recovered" value={fmt(totals.recov)} sub="reusable launches"       color="bg-emerald-500/10 text-emerald-400" />
+        <StatCard icon={DollarSign}  label="Total Spend"      value={`$${fmt(Math.round(totals.cost / 1000))}B`} sub="estimated cost"  color="bg-amber-500/10 text-amber-400" />
+        <StatCard icon={Zap}         label="Avg Success Rate" value={`${totals.avgRate.toFixed(1)}%`} sub="across filtered years" color="bg-violet-500/10 text-violet-400" />
       </div>
 
-      {/* Chart A — Launches per year */}
+      {/* ── Chart A: Launches per year ─────────────────────────────────────── */}
       <Card className="bg-card/60 border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-mono flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" /> Launches Per Year
           </CardTitle>
-          <CardDescription>Successful launches (green) vs failures (red) — 1957–2026</CardDescription>
+          <CardDescription>Successful launches (green) vs failures (red)</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-56">
@@ -270,32 +334,32 @@ export default function LaunchLog() {
               <AreaChart data={launchData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gradSuccess" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                    <stop offset="5%"  stopColor="#10b981" stopOpacity={0.4} />
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0.04} />
                   </linearGradient>
                   <linearGradient id="gradFailed" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.5} />
+                    <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.5} />
                     <stop offset="95%" stopColor="#ef4444" stopOpacity={0.05} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid {...gridStyle} />
-                <XAxis dataKey="year" ticks={eraTick.map(Number)} tick={xAxisStyle} />
+                <XAxis dataKey="year" tick={xAxisStyle} />
                 <YAxis tick={yAxisStyle} width={32} />
                 <Tooltip content={<LaunchesTooltip />} />
-                <ReferenceLine x={1969} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: 'Apollo 11', fill: '#f59e0b', fontSize: 9 }} />
-                <ReferenceLine x={1991} stroke="#6366f1" strokeDasharray="4 4" label={{ value: 'Space Age end', fill: '#6366f1', fontSize: 9 }} />
-                <ReferenceLine x={2015} stroke="#10b981" strokeDasharray="4 4" label={{ value: 'NewSpace', fill: '#10b981', fontSize: 9 }} />
+                {refLine(1969, 'Apollo 11', '#f59e0b')}
+                {refLine(1991, 'Space Age end', '#6366f1')}
+                {refLine(2015, 'NewSpace', '#10b981')}
                 <Area type="monotone" dataKey="Successful" stroke="#10b981" strokeWidth={1.5} fill="url(#gradSuccess)" />
-                <Area type="monotone" dataKey="Failed" stroke="#ef4444" strokeWidth={1.5} fill="url(#gradFailed)" />
+                <Area type="monotone" dataKey="Failed"     stroke="#ef4444" strokeWidth={1.5} fill="url(#gradFailed)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Chart B + C — side by side on large screens */}
+      {/* ── Charts B + C: side by side ────────────────────────────────────── */}
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Chart B — success rate */}
+        {/* Chart B: success rate */}
         <Card className="bg-card/60 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-mono">Mission Success Rate</CardTitle>
@@ -306,7 +370,7 @@ export default function LaunchLog() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={rateData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                   <CartesianGrid {...gridStyle} />
-                  <XAxis dataKey="year" ticks={[1957,1970,1985,2000,2015,2026]} tick={xAxisStyle} />
+                  <XAxis dataKey="year" tick={xAxisStyle} />
                   <YAxis domain={[30, 102]} tick={yAxisStyle} width={36} unit="%" />
                   <Tooltip content={<PercentTooltip />} />
                   <ReferenceLine y={90} stroke="#6366f1" strokeDasharray="3 3" label={{ value: '90%', fill: '#6366f1', fontSize: 9, position: 'insideLeft' }} />
@@ -317,33 +381,43 @@ export default function LaunchLog() {
           </CardContent>
         </Card>
 
-        {/* Chart C — booster recovery */}
+        {/* Chart C: booster recovery */}
         <Card className="bg-card/60 border-border/50">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-mono flex items-center gap-2">
               <RefreshCw className="w-4 h-4 text-emerald-400" /> Reusability Revolution
             </CardTitle>
-            <CardDescription>Booster recoveries vs total launches — 2013 to 2026</CardDescription>
+            <CardDescription>
+              {recovData.length > 0
+                ? `Booster recoveries vs total launches — ${recovData[0].year}–${recovData[recovData.length - 1].year}`
+                : 'No reusability data in selected range (starts 2013)'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={recoveryData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                  <CartesianGrid {...gridStyle} />
-                  <XAxis dataKey="year" tick={xAxisStyle} />
-                  <YAxis tick={yAxisStyle} width={32} />
-                  <Tooltip content={<LaunchesTooltip />} />
-                  <Bar dataKey="Launches" fill="#6366f1" opacity={0.5} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="Recovered" fill="#10b981" radius={[2, 2, 0, 0]} />
-                  <Legend wrapperStyle={{ fontSize: 10, fontFamily: 'monospace' }} />
-                </BarChart>
-              </ResponsiveContainer>
+              {recovData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={recovData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <CartesianGrid {...gridStyle} />
+                    <XAxis dataKey="year" tick={xAxisStyle} />
+                    <YAxis tick={yAxisStyle} width={32} />
+                    <Tooltip content={<LaunchesTooltip />} />
+                    <Bar dataKey="Launches"  fill="#6366f1" opacity={0.5} radius={[2,2,0,0]} />
+                    <Bar dataKey="Recovered" fill="#10b981" radius={[2,2,0,0]} />
+                    <Legend wrapperStyle={{ fontSize: 10, fontFamily: 'monospace' }} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground font-mono">
+                  Booster recovery began in 2015 — select a range that includes 2013+
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Chart D — human spaceflight */}
+      {/* ── Chart D: human spaceflight ────────────────────────────────────── */}
       <Card className="bg-card/60 border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-mono flex items-center gap-2">
@@ -353,30 +427,36 @@ export default function LaunchLog() {
         </CardHeader>
         <CardContent>
           <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={humanData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gradCrew" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.4} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid {...gridStyle} />
-                <XAxis dataKey="year" ticks={[1957,1965,1975,1985,1995,2005,2015,2026]} tick={xAxisStyle} />
-                <YAxis tick={yAxisStyle} width={32} />
-                <Tooltip content={<LaunchesTooltip />} />
-                <ReferenceLine x={1972} stroke="#f59e0b" strokeDasharray="3 3" label={{ value: 'Last Apollo', fill: '#f59e0b', fontSize: 9 }} />
-                <ReferenceLine x={2011} stroke="#6366f1" strokeDasharray="3 3" label={{ value: 'Shuttle end', fill: '#6366f1', fontSize: 9 }} />
-                <Bar dataKey="Crew Members" fill="url(#gradCrew)" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="Human Missions" fill="#f59e0b" opacity={0.7} radius={[2, 2, 0, 0]} />
-                <Legend wrapperStyle={{ fontSize: 10, fontFamily: 'monospace' }} />
-              </BarChart>
-            </ResponsiveContainer>
+            {humanData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={humanData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradCrew" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#22d3ee" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.4} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid {...gridStyle} />
+                  <XAxis dataKey="year" tick={xAxisStyle} />
+                  <YAxis tick={yAxisStyle} width={32} />
+                  <Tooltip content={<LaunchesTooltip />} />
+                  {refLine(1972, 'Last Apollo', '#f59e0b')}
+                  {refLine(2011, 'Shuttle end', '#6366f1')}
+                  <Bar dataKey="Crew Members"   fill="url(#gradCrew)" radius={[2,2,0,0]} />
+                  <Bar dataKey="Human Missions" fill="#f59e0b" opacity={0.7} radius={[2,2,0,0]} />
+                  <Legend wrapperStyle={{ fontSize: 10, fontFamily: 'monospace' }} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground font-mono">
+                No crewed missions in selected range
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Chart E — total cost */}
+      {/* ── Chart E: annual spending ──────────────────────────────────────── */}
       <Card className="bg-card/60 border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-mono flex items-center gap-2">
@@ -390,15 +470,15 @@ export default function LaunchLog() {
               <AreaChart data={costData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gradCost" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
+                    <stop offset="5%"  stopColor="#f59e0b" stopOpacity={0.4} />
                     <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid {...gridStyle} />
-                <XAxis dataKey="year" ticks={[1957,1970,1985,2000,2010,2020,2026]} tick={xAxisStyle} />
+                <XAxis dataKey="year" tick={xAxisStyle} />
                 <YAxis tick={yAxisStyle} width={40} tickFormatter={v => `$${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`} />
                 <Tooltip content={<CostTooltip />} />
-                <ReferenceLine x={1991} stroke="#6366f1" strokeDasharray="4 4" label={{ value: 'Space Age end', fill: '#6366f1', fontSize: 9 }} />
+                {refLine(1991, 'Space Age end', '#6366f1')}
                 <Area type="monotone" dataKey="Total Cost ($M)" stroke="#f59e0b" strokeWidth={2} fill="url(#gradCost)" />
               </AreaChart>
             </ResponsiveContainer>
@@ -406,7 +486,7 @@ export default function LaunchLog() {
         </CardContent>
       </Card>
 
-      {/* Footer note */}
+      {/* Footer */}
       <p className="text-xs text-muted-foreground text-center pb-2">
         Source: Global Space Mission Database (1957–2026) · 6,230 records · 13 spacefaring nations · 46 rocket families
       </p>
