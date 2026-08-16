@@ -121,7 +121,7 @@ export default function Moon() {
             
             <div className="mt-8 text-center relative z-10">
               <h2 className="text-3xl font-bold tracking-tight">{moon.phaseName}</h2>
-              <p className="text-primary font-mono mt-1 text-lg glow-text">{Math.round(moon.illumination * 100)}% Illuminated</p>
+              <p className="text-primary font-mono mt-1 text-lg glow-text">{moon.illumination.toFixed(1)}% Illuminated</p>
             </div>
           </motion.div>
 
