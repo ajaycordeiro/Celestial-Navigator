@@ -60,15 +60,27 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       });
       
       const { latitude, longitude } = pos.coords;
-      
-      // Simple reverse geocoding via free API or just a generic name
-      // We will just use generic name for now, or coordinates
-      const name = `${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°`;
-      
+
+      // Reverse-geocode via Nominatim to get a human-readable city name
+      let name = `${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°`;
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
+        const geo = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+        if (geo.ok) {
+          const data = await geo.json();
+          const a = data.address || {};
+          const city = a.city || a.town || a.village || a.county;
+          const parts = [city, a.state, a.country].filter(Boolean);
+          if (parts.length > 0) name = parts.join(', ');
+        }
+      } catch {
+        // fall back to coordinates if reverse geocode fails
+      }
+
       setLocationState({
         lat: latitude,
         lon: longitude,
-        locationName: `GPS: ${name}`
+        locationName: name
       });
     } catch (err: any) {
       setError(err.message || 'Failed to detect location. Please try entering it manually.');
