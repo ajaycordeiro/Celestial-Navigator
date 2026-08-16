@@ -143,16 +143,18 @@ function NightTimeline({
         })}
       </div>
 
-      {/* Labels */}
-      <div className="relative mt-2 h-10">
-        {ticks.map(t => {
+      {/* Labels — alternate two rows so adjacent events don't collide */}
+      <div className="relative mt-1" style={{ height: 48 }}>
+        {ticks.map((t, i) => {
           const p = pct(t.iso);
           if (p === null) return null;
+          // Even index → top row, odd index → bottom row (24 px lower)
+          const topPx = i % 2 === 0 ? 0 : 24;
           return (
             <div
               key={t.label}
               className="absolute -translate-x-1/2 text-center whitespace-nowrap"
-              style={{ left: `${p}%` }}
+              style={{ left: `${p}%`, top: topPx }}
             >
               <div className="text-[9px] font-mono leading-none" style={{ color: t.color }}>{t.label}</div>
               <div className="text-[8px] font-mono text-muted-foreground leading-none mt-0.5">
