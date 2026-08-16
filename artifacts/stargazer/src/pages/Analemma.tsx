@@ -197,12 +197,38 @@ export default function Analemma() {
               <MapPin className="w-4 h-4 shrink-0" />
               {locationName}
             </p>
+            <p className="text-sm text-foreground/70 mt-2 max-w-xl leading-relaxed">
+              If you photographed the sun at the same time every day for a year, the dots would trace a figure‑8 in the sky. That's the analemma.
+            </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono bg-card/40 px-3 py-2 rounded-lg border border-border/50">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono bg-card/40 px-3 py-2 rounded-lg border border-border/50 self-start md:self-auto">
             <Info className="w-3.5 h-3.5 shrink-0" />
             Sun's position at the same clock time, every day of {year}
           </div>
         </header>
+
+        {/* Why a figure-8? card */}
+        <Card className="p-4 bg-card/40 backdrop-blur border-border/40">
+          <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-3">Why a figure‑8?</p>
+          <ul className="space-y-2 text-sm text-foreground/80">
+            <li className="flex items-start gap-2">
+              <span className="text-base leading-tight shrink-0">🌍</span>
+              <span><span className="text-foreground font-medium">Earth's axis is tilted</span> — the sun rides high in summer and low in winter, giving the figure‑8 its height.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-base leading-tight shrink-0">🔵</span>
+              <span><span className="text-foreground font-medium">Earth's orbit is oval, not circular</span> — the sun runs ahead or behind clock time throughout the year, giving the figure‑8 its sideways wobble.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-base leading-tight shrink-0">📍</span>
+              <span><span className="text-foreground font-medium">Your location changes the shape</span> — taller and more upright near the equator, flatter and tilted near the poles.</span>
+            </li>
+          </ul>
+          <div className="mt-4 pt-3 border-t border-border/40 space-y-1 text-xs text-muted-foreground leading-relaxed">
+            <p>Sailors used it to navigate the seas, and sundial makers carved it on their dials — without it, a sundial drifts by up to <span className="text-foreground">16 minutes</span>.</p>
+            <p>Today it guides architects designing sun‑smart buildings, and is the holy grail of sky photography: <span className="text-foreground">365 photos, same spot, same time</span>, stacked into one image.</p>
+          </div>
+        </Card>
 
         {/* Controls */}
         <Card className="p-4 bg-card/60 backdrop-blur border-border/50">
