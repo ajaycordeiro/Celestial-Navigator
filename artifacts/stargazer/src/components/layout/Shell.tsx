@@ -9,6 +9,7 @@ import {
   Compass,
   Map as MapIcon,
   Sun,
+  Rocket,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ReactNode } from 'react';
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { path: '/iss', label: 'ISS Tracker', icon: Satellite },
   { path: '/weather', label: 'Conditions', icon: CloudRainWind },
   { path: '/analemma', label: 'Analemma', icon: Sun },
+  { path: '/launch-log', label: 'Launch Log', icon: Rocket },
 ];
 
 export function Shell({ children }: { children: ReactNode }) {

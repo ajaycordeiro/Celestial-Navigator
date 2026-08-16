@@ -17,6 +17,7 @@ import ISS from '@/pages/ISS';
 import Weather from '@/pages/Weather';
 import SkyMap from '@/pages/SkyMap';
 import Analemma from '@/pages/Analemma';
+import LaunchLog from '@/pages/LaunchLog';
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ function Router() {
           <Route path="/weather" component={Weather} />
           <Route path="/skymap" component={SkyMap} />
           <Route path="/analemma" component={Analemma} />
+          <Route path="/launch-log" component={LaunchLog} />
           <Route component={NotFound} />
         </Switch>
       </RoutedErrorBoundary>
