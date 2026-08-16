@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React from 'react';
 import { useSkyLocation } from '@/contexts/LocationContext';
 import { LocationPicker } from '@/components/LocationPicker';
 import { useGetSkyOverview, getGetSkyOverviewQueryKey } from '@workspace/api-client-react';
@@ -15,47 +15,10 @@ import {
   Sunset,
   ArrowRight,
   MapPin,
-  Clock
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 
-function ObservatoryClocks({ locationName, timezone }: { locationName: string; timezone: string }) {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const fmt = (tz?: string) =>
-    now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: tz });
-
-  const myTime  = fmt();                        // device local time
-  const locTime = timezone ? fmt(timezone) : null; // searched location time
-
-  // Derive a short timezone abbreviation for the searched location
-  const locAbbr = timezone
-    ? now.toLocaleTimeString('en-US', { timeZoneName: 'short', timeZone: timezone }).split(' ').pop()
-    : null;
-
-  return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0 text-xs font-mono text-muted-foreground bg-card/40 px-4 py-3 rounded-lg border border-border/50 backdrop-blur divide-y sm:divide-y-0 sm:divide-x divide-border/40 w-full sm:w-auto">
-      <div className="flex flex-col gap-0.5 sm:pr-4 pb-2 sm:pb-0">
-        <span className="uppercase tracking-wider text-[10px]">Your Time</span>
-        <span className="text-foreground tabular-nums text-sm">{myTime}</span>
-      </div>
-      {locTime && (
-        <div className="flex flex-col gap-0.5 sm:pl-4 pt-2 sm:pt-0">
-          <span className="uppercase tracking-wider text-[10px] flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {locationName.split(',')[0]} {locAbbr ? `(${locAbbr})` : ''}
-          </span>
-          <span className="text-primary tabular-nums text-sm">{locTime}</span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 const container = {
   hidden: { opacity: 0 },
@@ -112,7 +75,6 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-          <ObservatoryClocks locationName={locationName} timezone={timezone} />
         </header>
 
         {changingLocation && (

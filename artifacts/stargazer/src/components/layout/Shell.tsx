@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ReactNode } from 'react';
+import { ObservatoryClocks } from '@/components/ObservatoryClocks';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: Telescope },
@@ -59,6 +60,9 @@ export function Shell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
+
+        {/* Desktop clock widget — bottom of sidebar */}
+        <ObservatoryClocks />
       </aside>
 
       {/* Right column: stacks mobile header → content → bottom nav */}
@@ -70,6 +74,11 @@ export function Shell({ children }: { children: ReactNode }) {
             <Telescope className="w-6 h-6 text-primary mr-2" />
             <span className="font-mono font-bold text-lg text-primary glow-text">StarGazer</span>
           </header>
+
+          {/* Mobile clock bar — hidden on desktop where sidebar clock takes over */}
+          <div className="md:hidden">
+            <ObservatoryClocks />
+          </div>
           
           <div className="flex-1 overflow-y-auto w-full relative z-0">
             <div className="max-w-6xl mx-auto p-4 md:p-8 min-h-full flex flex-col">
