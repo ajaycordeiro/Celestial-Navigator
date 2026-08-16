@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import tzlookup from 'tz-lookup';
 
 interface SkyLocation {
   lat: number | null;
   lon: number | null;
   locationName: string;
+  timezone: string; // IANA timezone e.g. "Asia/Dubai"
 }
 
 interface LocationContextType extends SkyLocation {
@@ -20,12 +22,17 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem('stargazer-location');
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // Backfill timezone for old stored locations that predate this field
+        if (parsed.lat && parsed.lon && !parsed.timezone) {
+          try { parsed.timezone = tzlookup(parsed.lat, parsed.lon); } catch { parsed.timezone = ''; }
+        }
+        return parsed;
       }
     } catch (e) {
       console.error('Failed to parse location from localStorage', e);
     }
-    return { lat: null, lon: null, locationName: '' };
+    return { lat: null, lon: null, locationName: '', timezone: '' };
   });
 
   const [isDetecting, setIsDetecting] = useState(false);
@@ -36,7 +43,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
   }, [location]);
 
   const setLocation = (lat: number, lon: number, name: string = 'Custom Location') => {
-    setLocationState({ lat, lon, locationName: name });
+    let timezone = '';
+    try { timezone = tzlookup(lat, lon); } catch { /* ocean / edge case */ }
+    setLocationState({ lat, lon, locationName: name, timezone });
     setError(null);
   };
 
@@ -58,8 +67,12 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           maximumAge: 0
         });
       });
-      
+
       const { latitude, longitude } = pos.coords;
+
+      // Timezone lookup (client-side, no API)
+      let timezone = '';
+      try { timezone = tzlookup(latitude, longitude); } catch { /* ocean */ }
 
       // Reverse-geocode via Nominatim to get a human-readable city name
       let name = `${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°`;
@@ -73,15 +86,9 @@ export function LocationProvider({ children }: { children: ReactNode }) {
           const parts = [city, a.state, a.country].filter(Boolean);
           if (parts.length > 0) name = parts.join(', ');
         }
-      } catch {
-        // fall back to coordinates if reverse geocode fails
-      }
+      } catch { /* fall back to coordinates */ }
 
-      setLocationState({
-        lat: latitude,
-        lon: longitude,
-        locationName: name
-      });
+      setLocationState({ lat: latitude, lon: longitude, locationName: name, timezone });
     } catch (err: any) {
       setError(err.message || 'Failed to detect location. Please try entering it manually.');
     } finally {

@@ -20,45 +20,39 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
 
-/** Local Sidereal Time — which RA is currently on the observer's meridian */
-function calcLST(lon: number, date: Date): string {
-  const JD = date.getTime() / 86400000 + 2440587.5;
-  const T = (JD - 2451545.0) / 36525;
-  let GMST = 280.46061837 + 360.98564736629 * (JD - 2451545.0) + T * T * (0.000387933 - T / 38710000);
-  GMST = ((GMST % 360) + 360) % 360;
-  const LST = ((GMST + lon + 360) % 360) / 15; // degrees → hours
-  const h = Math.floor(LST);
-  const m = Math.floor((LST - h) * 60);
-  const s = Math.floor(((LST - h) * 60 - m) * 60);
-  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
-}
-
-function ObservatoryClocks({ lon }: { lon: number }) {
+function ObservatoryClocks({ locationName, timezone }: { locationName: string; timezone: string }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const localTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  const utcTime  = now.toUTCString().split(' ')[4]; // "HH:MM:SS"
-  const lst      = calcLST(lon, now);
+  const fmt = (tz?: string) =>
+    now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: tz });
+
+  const myTime  = fmt();                        // device local time
+  const locTime = timezone ? fmt(timezone) : null; // searched location time
+
+  // Derive a short timezone abbreviation for the searched location
+  const locAbbr = timezone
+    ? now.toLocaleTimeString('en-US', { timeZoneName: 'short', timeZone: timezone }).split(' ').pop()
+    : null;
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-0 text-xs font-mono text-muted-foreground bg-card/40 px-4 py-3 rounded-lg border border-border/50 backdrop-blur divide-y sm:divide-y-0 sm:divide-x divide-border/40 w-full sm:w-auto">
-      <div className="flex items-center gap-2 sm:pr-4">
-        <Clock className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-        <span className="uppercase tracking-wider">Local</span>
-        <span className="text-foreground tabular-nums">{localTime}</span>
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-0 text-xs font-mono text-muted-foreground bg-card/40 px-4 py-3 rounded-lg border border-border/50 backdrop-blur divide-y sm:divide-y-0 sm:divide-x divide-border/40 w-full sm:w-auto">
+      <div className="flex flex-col gap-0.5 sm:pr-4 pb-2 sm:pb-0">
+        <span className="uppercase tracking-wider text-[10px]">Your Time</span>
+        <span className="text-foreground tabular-nums text-sm">{myTime}</span>
       </div>
-      <div className="flex items-center gap-2 sm:px-4 pt-2 sm:pt-0">
-        <span className="uppercase tracking-wider">UTC</span>
-        <span className="text-secondary tabular-nums">{utcTime}</span>
-      </div>
-      <div className="flex items-center gap-2 sm:pl-4 pt-2 sm:pt-0">
-        <span className="uppercase tracking-wider">LST</span>
-        <span className="text-primary tabular-nums">{lst}</span>
-      </div>
+      {locTime && (
+        <div className="flex flex-col gap-0.5 sm:pl-4 pt-2 sm:pt-0">
+          <span className="uppercase tracking-wider text-[10px] flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {locationName.split(',')[0]} {locAbbr ? `(${locAbbr})` : ''}
+          </span>
+          <span className="text-primary tabular-nums text-sm">{locTime}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -79,7 +73,7 @@ const item = {
 };
 
 export default function Dashboard() {
-  const { lat, lon, locationName } = useSkyLocation();
+  const { lat, lon, locationName, timezone } = useSkyLocation();
   const [changingLocation, setChangingLocation] = React.useState(false);
 
   const { data: overview, isLoading, error } = useGetSkyOverview(
@@ -118,7 +112,7 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-          <ObservatoryClocks lon={lon} />
+          <ObservatoryClocks locationName={locationName} timezone={timezone} />
         </header>
 
         {changingLocation && (
