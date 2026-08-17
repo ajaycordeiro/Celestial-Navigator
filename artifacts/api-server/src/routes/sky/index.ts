@@ -378,13 +378,19 @@ Best deep-sky objects (altitude > 10°): ${visibleDSO}`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-5.6-luna",
-      max_completion_tokens: 300,
+      max_completion_tokens: 500,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const plan = completion.choices[0]?.message?.content?.trim() || "The sky looks interesting tonight — check the individual tabs for planets, deep-sky objects, and ISS passes.";
-    // Only cache successful non-empty plans
-    if (plan) planCache.set(cacheKey, { plan, ts: Date.now() });
+    const rawContent = completion.choices[0]?.message?.content ?? "";
+    req.log.info({ finishReason: completion.choices[0]?.finish_reason, contentLength: rawContent.length }, "AI plan response");
+
+    const aiPlan = rawContent.trim();
+    const FALLBACK = "The sky looks interesting tonight — check the individual tabs for planets, deep-sky objects, and ISS passes.";
+    const plan = aiPlan || FALLBACK;
+
+    // Only cache a real AI response — never cache the fallback
+    if (aiPlan) planCache.set(cacheKey, { plan: aiPlan, ts: Date.now() });
 
     res.json({ plan });
   } catch (err) {
