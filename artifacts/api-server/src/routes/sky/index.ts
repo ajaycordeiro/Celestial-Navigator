@@ -362,15 +362,17 @@ router.get("/sky/plan", async (req, res): Promise<void> => {
     const sunsetTime = new Date(overview.sunsetTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
     const darkTime = new Date(overview.astronomicalTwilightEnd).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 
-    const prompt = `You are a friendly astronomy guide. Write a concise 3-5 sentence observing plan for tonight based on this data. Be specific and practical — mention what to look at first, what conditions allow, and any timing highlights. Do not use markdown or bullet points; write it as a single natural paragraph.
+    const prompt = `You are a friendly, knowledgeable astronomy guide writing a personalised observing plan for an amateur stargazer.
+
+Write EXACTLY 4 sentences — no more, no fewer — as a single flowing paragraph with no bullet points or markdown. Always cover: (1) when and how dark the sky will be tonight, (2) the best planet or naked-eye target to start with (even if conditions are poor, name the brightest thing worth looking at), (3) one or two deep-sky highlights or binocular targets, (4) a practical tip about the moon, weather, or timing. If the sky is cloudy or targets are sparse, still give concrete advice — what to watch for if skies clear, or which window of the night is best.
 
 Location: ${lat.toFixed(2)}°, ${lon.toFixed(2)}°
 Date: ${now.toDateString()}
-Weather: ${weatherSummary}
-Sunset: ${sunsetTime}, True dark: ${darkTime}
+Weather tonight: ${weatherSummary}
+Sunset: ${sunsetTime} — True astronomical darkness: ${darkTime}
 Moon: ${moonPhase.phaseName}, ${moonPhase.illumination.toFixed(0)}% illuminated
-Visible planets: ${visiblePlanets}
-Best deep-sky objects tonight: ${visibleDSO}`;
+Visible planets (altitude > 5°): ${visiblePlanets}
+Best deep-sky objects (altitude > 10°): ${visibleDSO}`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-5.6-luna",

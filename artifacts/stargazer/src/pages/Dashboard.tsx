@@ -46,6 +46,11 @@ export default function Dashboard() {
     { status: 'idle' } | { status: 'loading' } | { status: 'done'; text: string } | { status: 'error'; message: string }
   >({ status: 'idle' });
 
+  // Clear the plan whenever the location changes
+  React.useEffect(() => {
+    setPlanState({ status: 'idle' });
+  }, [lat, lon]);
+
   const { data: overview, isLoading, error } = useGetSkyOverview(
     { lat: lat!, lon: lon! },
     { query: { enabled: !!lat && !!lon, queryKey: getGetSkyOverviewQueryKey({ lat: lat!, lon: lon! }) } }
