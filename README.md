@@ -8,7 +8,7 @@ A full-featured astronomy web app for planning and enjoying nights under the sta
 
 | Tab | What it does |
 |---|---|
-| **Dashboard** | At-a-glance sky conditions, planet highlights, and quick links to every tool |
+| **Dashboard** | At-a-glance sky conditions, planet highlights, quick links to every tool, and AI-powered observing plan |
 | **Sky Map** | Interactive 2D map of the sky overhead, updated in real time |
 | **Planets** | Rise/transit/set times, angular size, magnitude, and current constellation for all planets |
 | **Moon** | Phase, illumination, rise/set, distance, angular diameter, and next major phase dates |
@@ -33,9 +33,10 @@ A full-featured astronomy web app for planning and enjoying nights under the sta
 - **Lucide React** icons
 
 ### API Server (`artifacts/api-server`)
-- **Node.js** + **Fastify** (via Express router)
+- **Node.js** + **Express**
 - **astronomy-engine** for all celestial calculations (rise/set, altitude, azimuth, phases, illumination)
 - **Open-Meteo** for free weather and seeing data
+- **OpenAI GPT** (via Replit AI Integrations) for the Plan My Night feature
 - **esbuild** for fast production builds
 
 ### Shared Libraries
@@ -44,6 +45,7 @@ A full-featured astronomy web app for planning and enjoying nights under the sta
 | `lib/api-spec` | OpenAPI 3.1 spec — single source of truth for all endpoints |
 | `lib/api-zod` | Zod schemas auto-generated from the spec (server-side validation) |
 | `lib/api-client-react` | Typed fetch client + TanStack Query hooks (generated from spec) |
+| `lib/integrations-openai-ai-server` | Pre-configured OpenAI SDK client via Replit AI Integrations |
 
 ### Monorepo
 - **pnpm workspaces** with TypeScript project references
@@ -100,8 +102,10 @@ Open `http://localhost:5173` (or whichever port Vite picks) in your browser.
 |---|---|---|
 | `PORT` | No | API server port (default `8080`) |
 | `SESSION_SECRET` | Yes (prod) | Secret for session signing |
+| `AI_INTEGRATIONS_OPENAI_BASE_URL` | Yes | Auto-set by Replit AI Integrations |
+| `AI_INTEGRATIONS_OPENAI_API_KEY` | Yes | Auto-set by Replit AI Integrations |
 
-No API keys are required — weather data comes from the free [Open-Meteo](https://open-meteo.com/) API and all celestial math runs locally via `astronomy-engine`.
+Weather data comes from the free [Open-Meteo](https://open-meteo.com/) API and all celestial math runs locally via `astronomy-engine`. The AI plan feature uses OpenAI via [Replit AI Integrations](https://docs.replit.com/ai/integrations) — no manual API key needed when running on Replit.
 
 ---
 
@@ -118,9 +122,26 @@ No API keys are required — weather data comes from the free [Open-Meteo](https
 | GET | `/api/sky/iss` | ISS pass predictions |
 | GET | `/api/sky/weather` | Sky weather and seeing conditions |
 | GET | `/api/sky/analemma` | Sun analemma data for a given hour |
+| GET | `/api/sky/plan` | AI-generated plain-English observing plan for tonight |
 | GET | `/api/nasa/images` | NASA image library search |
 
 All endpoints accept `lat` and `lon` query parameters. See `lib/api-spec/openapi.yaml` for full parameter and response schemas.
+
+---
+
+## AI Feature — Plan My Night
+
+The **Plan My Night** button on the Dashboard uses OpenAI to generate a personalised 4-sentence observing plan based on live data from the app.
+
+**How it works:**
+1. The server calls the existing astronomy and weather compute functions for the user's location
+2. It assembles tonight's data (weather, moon phase, visible planets, best deep-sky objects, sunset/dark times) into a prompt
+3. OpenAI reads that data and writes a plain-English paragraph: what to look at first, what conditions allow, and any timing highlights
+4. The result is **cached server-side for 2 hours** per location — repeated clicks within that window cost nothing extra
+
+**No user input required** — just one click, one paragraph.
+
+**Cost:** ~$0.0002 per click at current GPT pricing (roughly $0.02 per 100 unique location/time-window combinations).
 
 ---
 
