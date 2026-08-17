@@ -19,6 +19,11 @@ import {
   computeCelestialEvents,
   computeAnalemma,
 } from "./astronomy.js";
+import { openai } from "@workspace/integrations-openai-ai-server";
+
+// 2-hour in-memory cache for AI plans keyed by "lat,lon,cacheWindow"
+const planCache = new Map<string, { plan: string; ts: number }>();
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000;
 
 const router: IRouter = Router();
 
@@ -292,6 +297,96 @@ router.get("/sky/analemma", async (req, res): Promise<void> => {
   const targetYear = year ?? new Date().getFullYear();
   const result = computeAnalemma(lat, lon, hourUTC, targetYear);
   res.json(result);
+});
+
+router.get("/sky/plan", async (req, res): Promise<void> => {
+  const parsed = GetSkyOverviewQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { lat, lon } = parsed.data;
+
+  // 2-hour cache key: round time to nearest 2-hour window
+  const window = Math.floor(Date.now() / CACHE_TTL_MS);
+  const cacheKey = `${lat.toFixed(2)},${lon.toFixed(2)},${window}`;
+  const cached = planCache.get(cacheKey);
+  if (cached) {
+    res.json({ plan: cached.plan });
+    return;
+  }
+
+  try {
+    const now = new Date();
+
+    // Gather data from existing compute functions
+    const [overview, planets, moon, deepSky] = await Promise.all([
+      Promise.resolve(computeSkyOverview(now, lat, lon)),
+      Promise.resolve(computePlanets(now, lat, lon)),
+      Promise.resolve(computeMoon(now, lat, lon)),
+      Promise.resolve(computeDeepSkyObjects(now, lat, lon)),
+    ]);
+
+    // Fetch weather
+    let weatherSummary = "weather data unavailable";
+    try {
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cloudcover,windspeed_10m&forecast_days=1&timezone=auto`;
+      const weatherRes = await fetch(weatherUrl, { signal: AbortSignal.timeout(6000) });
+      if (weatherRes.ok) {
+        const wd = await weatherRes.json() as { hourly: { cloudcover: number[]; windspeed_10m: number[] } };
+        const hour = now.getHours();
+        const cloud = wd.hourly.cloudcover[hour] ?? 0;
+        const wind = wd.hourly.windspeed_10m[hour] ?? 0;
+        const conditions = cloud < 20 ? "clear" : cloud < 50 ? "mostly clear" : cloud < 80 ? "partly cloudy" : "cloudy";
+        weatherSummary = `${conditions} skies (${cloud}% cloud cover, wind ${wind} km/h)`;
+      }
+    } catch { /* ignore weather failure */ }
+
+    // Build visible planets list
+    const visiblePlanets = (planets as Array<{ name: string; altitude: number; magnitude: number }>)
+      .filter(p => p.altitude > 5)
+      .sort((a, b) => a.magnitude - b.magnitude)
+      .slice(0, 4)
+      .map(p => `${p.name} (alt ${p.altitude}°)`)
+      .join(", ") || "none above horizon";
+
+    // Build visible deep-sky list
+    const visibleDSO = (deepSky as Array<{ name: string; type: string; altitude: number; magnitude: number }>)
+      .filter(d => d.altitude > 10)
+      .sort((a, b) => a.magnitude - b.magnitude)
+      .slice(0, 5)
+      .map(d => `${d.name} (${d.type})`)
+      .join(", ") || "none well-placed";
+
+    const moonPhase = (moon as { phaseName: string; illumination: number });
+    const sunsetTime = new Date(overview.sunsetTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const darkTime = new Date(overview.astronomicalTwilightEnd).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+
+    const prompt = `You are a friendly astronomy guide. Write a concise 3-5 sentence observing plan for tonight based on this data. Be specific and practical — mention what to look at first, what conditions allow, and any timing highlights. Do not use markdown or bullet points; write it as a single natural paragraph.
+
+Location: ${lat.toFixed(2)}°, ${lon.toFixed(2)}°
+Date: ${now.toDateString()}
+Weather: ${weatherSummary}
+Sunset: ${sunsetTime}, True dark: ${darkTime}
+Moon: ${moonPhase.phaseName}, ${moonPhase.illumination.toFixed(0)}% illuminated
+Visible planets: ${visiblePlanets}
+Best deep-sky objects tonight: ${visibleDSO}`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.6-luna",
+      max_completion_tokens: 300,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const plan = completion.choices[0]?.message?.content?.trim() || "The sky looks interesting tonight — check the individual tabs for planets, deep-sky objects, and ISS passes.";
+    // Only cache successful non-empty plans
+    if (plan) planCache.set(cacheKey, { plan, ts: Date.now() });
+
+    res.json({ plan });
+  } catch (err) {
+    req.log.error({ err }, "Plan My Night failed");
+    res.status(500).json({ error: "Could not generate observing plan. Please try again." });
+  }
 });
 
 export default router;

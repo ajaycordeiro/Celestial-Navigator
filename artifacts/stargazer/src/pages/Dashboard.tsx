@@ -17,6 +17,8 @@ import {
   MapPin,
   Sun,
   Map as MapIcon,
+  Telescope,
+  Loader2,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
@@ -40,11 +42,27 @@ const item = {
 export default function Dashboard() {
   const { lat, lon, locationName, timezone } = useSkyLocation();
   const [changingLocation, setChangingLocation] = React.useState(false);
+  const [planState, setPlanState] = React.useState<
+    { status: 'idle' } | { status: 'loading' } | { status: 'done'; text: string } | { status: 'error'; message: string }
+  >({ status: 'idle' });
 
   const { data: overview, isLoading, error } = useGetSkyOverview(
     { lat: lat!, lon: lon! },
     { query: { enabled: !!lat && !!lon, queryKey: getGetSkyOverviewQueryKey({ lat: lat!, lon: lon! }) } }
   );
+
+  async function handlePlanMyNight() {
+    if (!lat || !lon) return;
+    setPlanState({ status: 'loading' });
+    try {
+      const res = await fetch(`/api/sky/plan?lat=${lat}&lon=${lon}`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json() as { plan: string };
+      setPlanState({ status: 'done', text: data.plan });
+    } catch (e) {
+      setPlanState({ status: 'error', message: 'Could not generate plan. Try again in a moment.' });
+    }
+  }
 
   if (!lat || !lon) {
     return (
@@ -165,6 +183,51 @@ export default function Dashboard() {
                 </Card>
               </motion.div>
             </div>
+
+            {/* Plan My Night */}
+            <motion.div variants={item} className="flex flex-col gap-4">
+              <button
+                onClick={handlePlanMyNight}
+                disabled={planState.status === 'loading'}
+                className="flex items-center justify-center gap-3 w-full py-4 px-6 rounded-xl border border-primary/40 bg-primary/10 hover:bg-primary/20 hover:border-primary/70 text-primary font-semibold text-base transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {planState.status === 'loading' ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Reading the sky…
+                  </>
+                ) : (
+                  <>
+                    <Telescope className="w-5 h-5" />
+                    Plan My Night
+                  </>
+                )}
+              </button>
+
+              {planState.status === 'done' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                >
+                  <Card className="p-6 bg-card/60 backdrop-blur border-primary/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+                        <Telescope className="w-4 h-4" />
+                      </div>
+                      <span className="font-mono text-xs text-primary uppercase tracking-wider">Tonight's Observing Plan</span>
+                    </div>
+                    <p className="text-foreground leading-relaxed">{planState.text}</p>
+                  </Card>
+                </motion.div>
+              )}
+
+              {planState.status === 'error' && (
+                <p className="text-center text-sm text-destructive-foreground bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
+                  {planState.message}
+                </p>
+              )}
+            </motion.div>
 
             {/* Quick Access Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
