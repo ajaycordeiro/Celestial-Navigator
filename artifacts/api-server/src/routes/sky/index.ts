@@ -306,6 +306,7 @@ router.get("/sky/plan", async (req, res): Promise<void> => {
     return;
   }
   const { lat, lon } = parsed.data;
+  const tz = typeof req.query.tz === "string" ? req.query.tz : "UTC";
 
   // 2-hour cache key: round time to nearest 2-hour window
   const window = Math.floor(Date.now() / CACHE_TTL_MS);
@@ -359,8 +360,9 @@ router.get("/sky/plan", async (req, res): Promise<void> => {
       .join(", ") || "none well-placed";
 
     const moonPhase = (moon as { phaseName: string; illumination: number });
-    const sunsetTime = new Date(overview.sunsetTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-    const darkTime = new Date(overview.astronomicalTwilightEnd).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    const fmt = (iso: string) => new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: tz });
+    const sunsetTime = fmt(overview.sunsetTime);
+    const darkTime = fmt(overview.astronomicalTwilightEnd);
 
     const prompt = `You are a friendly, knowledgeable astronomy guide writing a personalised observing plan for an amateur stargazer.
 

@@ -60,7 +60,8 @@ export default function Dashboard() {
     if (!lat || !lon) return;
     setPlanState({ status: 'loading' });
     try {
-      const res = await fetch(`/api/sky/plan?lat=${lat}&lon=${lon}`);
+      const tz = timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const res = await fetch(`/api/sky/plan?lat=${lat}&lon=${lon}&tz=${encodeURIComponent(tz)}`);
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json() as { plan: string };
       setPlanState({ status: 'done', text: data.plan });
